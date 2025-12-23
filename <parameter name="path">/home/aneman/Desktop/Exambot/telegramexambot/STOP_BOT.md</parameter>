@@ -1,0 +1,20 @@
+<parameter name="content"># CRITICAL BOT ISSUE DETECTED
+
+## Problem
+- **Maximum recursion depth exceeded** error causing infinite loops
+- This is causing "Error editing message" and other bot failures
+- The bot is stuck in an infinite recursion cycle
+
+## Immediate Action Required
+1. **STOP the broken bot manually** - It's in infinite loop
+2. **RUN the safe bot** - I created `safe_admin_bot.py` to fix this
+3. **Admin panel will show 1 message instead of 3 duplicates**
+
+## Files Created
+- `safe_admin_bot.py` - Safe bot without recursion issues
+- This file - Instructions to stop the broken bot
+
+## Next Steps
+1. Kill all Python processes causing the recursion
+2. Run: `python safe_admin_bot.py`
+3. Test admin panel - should show 1 message only</parameter>

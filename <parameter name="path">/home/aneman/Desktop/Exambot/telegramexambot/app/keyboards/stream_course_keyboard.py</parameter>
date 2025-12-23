@@ -1,0 +1,55 @@
+<parameter name="content">"""
+Stream-Specific Course Selection Keyboard
+Shows different courses based on user's stream during registration
+"""
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+def get_stream_courses_keyboard(stream):
+    """Get course keyboard based on stream type"""
+    
+    # Define courses for each stream
+    if stream == "natural_science":
+        courses = [
+            ("Biology", "bio"),
+            ("Physics", "physics"), 
+            ("Chemistry", "chemistry"),
+            ("English", "english"),
+            ("Mathematics", "maths")
+        ]
+    elif stream == "social_science":
+        courses = [
+            ("Mathematics", "maths"),
+            ("English", "english"),
+            ("Geography", "geography"),
+            ("History", "history")
+        ]
+    else:
+        # Default fallback
+        courses = [
+            ("Mathematics", "maths"),
+            ("English", "english")
+        ]
+    
+    # Create keyboard with courses
+    keyboard = []
+    for course_name, course_code in courses:
+        keyboard.append([InlineKeyboardButton(
+            f"📚 {course_name}", 
+            callback_data=f"stream_course_{course_code}"
+        )])
+    
+    # Add back button
+    keyboard.append([InlineKeyboardButton("↩️ Back", callback_data="back_to_main")])
+    
+    return InlineKeyboardMarkup(keyboard)
+
+def get_stream_courses_message(stream):
+    """Get appropriate message based on stream"""
+    if stream == "natural_science":
+        return "🧬 **Natural Science Stream Courses**\n\nSelect your course for exams and practice:"
+    elif stream == "social_science":
+        return "🌍 **Social Science Stream Courses**\n\nSelect your course for exams and practice:"
+    else:
+        return "📚 **Available Courses**\n\nSelect your course for exams and practice:"
+</parameter>

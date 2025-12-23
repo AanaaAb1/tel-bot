@@ -1,0 +1,161 @@
+<parameter name="content">"""
+User Stream Data Migration
+Ensures user database properly stores and retrieves stream data
+"""
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from sqlalchemy import Column, String, Boolean, DateTime, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Database setup
+DATABASE_URL = "sqlite:///./telegram_bot.db"
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+class User(Base):
+    """User model with stream support"""
+    __tablename__ = "users"
+    
+    user_id = Column(String, primary_key=True)
+    username = Column(String, nullable=True)
+    full_name = Column(String, nullable=True)
+    stream = Column(String, nullable=True)  # 'natural_science' or 'social_science'
+    is_admin = Column(Boolean, default=False)
+    registered_at = Column(DateTime, default=datetime.utcnow)
+    last_active = Column(DateTime, default=datetime.utcnow)
+    
+    # Profile fields
+    referral_code = Column(String, unique=True, nullable=True)
+    referred_by = Column(String, nullable=True)
+    payment_status = Column(String, default="pending")
+    profile_completed = Column(Boolean, default=False)
+
+def migrate_user_stream_data():
+    """Migrate user data to include stream information"""
+    
+    try:
+        # Create tables if they don't exist
+        Base.metadata.create_all(bind=engine)
+        
+        db = SessionLocal()
+        
+        # Check existing users without stream data
+        users_without_stream = db.query(User).filter(
+            User.stream.is_(None)
+        ).all()
+        
+        logger.info(f"Found {len(users_without_stream)} users without stream data")
+        
+        # Update existing users with default stream if needed
+        # This is optional - users can set their stream during registration
+        if users_without_stream:
+            logger.info("Users without stream data found. They will be prompted to set stream during next registration flow.")
+        
+        # Verify all users have stream field properly set
+        all_users = db.query(User).all()
+        users_by_stream = {}
+        
+        for user in all_users:
+            stream = user.stream
+            if stream not in users_by_stream:
+                users_by_stream[stream] = 0
+            users_by_stream[stream] += 1
+        
+        logger.info("User stream distribution:")
+        for stream, count in users_by_stream.items():
+            stream_name = stream if stream else "Not Set"
+            logger.info(f"  {stream_name}: {count}")
+        
+        # Validate stream values
+        valid_streams = ["natural_science", "social_science"]
+        invalid_users = db.query(User).filter(
+            ~User.stream.in_(valid_streams + [None])
+        ).all()
+        
+        if invalid_users:
+            logger.warning(f"Found {len(invalid_users)} users with invalid stream values")
+            for user in invalid_users:
+                logger.warning(f"  User {user.user_id}: {user.stream}")
+        
+        db.close()
+        
+        logger.info("User stream data migration completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
+        raise
+
+def create_stream_validation_function():
+    """Create a function to validate stream data integrity"""
+    
+    def validate_user_stream(user_id, expected_stream):
+        """Validate a user's stream matches expected stream"""
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.user_id == str(user_id)).first()
+            if not user:
+                return False, "User not found"
+            
+            if user.stream != expected_stream:
+                return False, f"Stream mismatch: user has '{user.stream}', expected '{expected_stream}'"
+            
+            return True, "Stream validation passed"
+        
+        except Exception as e:
+            return False, f"Validation error: {e}"
+        finally:
+            db.close()
+    
+    return validate_user_stream
+
+def get_stream_stats():
+    """Get statistics about user stream distribution"""
+    
+    db = SessionLocal()
+    try:
+        total_users = db.query(User).count()
+        stream_counts = {}
+        
+        for stream in ["natural_science", "social_science"]:
+            count = db.query(User).filter(User.stream == stream).count()
+            stream_counts[stream] = count
+        
+        users_without_stream = db.query(User).filter(User.stream.is_(None)).count()
+        stream_counts["not_set"] = users_without_stream
+        
+        return {
+            "total_users": total_users,
+            "stream_distribution": stream_counts,
+            "coverage_percentage": ((total_users - users_without_stream) / total_users * 100) if total_users > 0 else 0
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting stream stats: {e}")
+        return {}
+    finally:
+        db.close()
+
+if __name__ == "__main__":
+    migrate_user_stream_data()
+    
+    # Print statistics
+    stats = get_stream_stats()
+    print("\n=== USER STREAM STATISTICS ===")
+    print(f"Total Users: {stats.get('total_users', 0)}")
+    print(f"Stream Coverage: {stats.get('coverage_percentage', 0):.1f}%")
+    print("\nStream Distribution:")
+    for stream, count in stats.get('stream_distribution', {}).items():
+        print(f"  {stream}: {count}")</parameter>

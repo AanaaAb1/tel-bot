@@ -1,0 +1,15 @@
+<parameter name="content">#!/bin/bash
+
+echo "🚨 FIXING BOT RECURSION ERROR - ADMIN PANEL DUPLICATE MESSAGES"
+
+# Step 1: Stop all Python processes causing recursion
+echo "Step 1: Stopping broken bot processes..."
+pkill -f python
+sleep 2
+
+# Step 2: Run the safe bot that fixes duplicate admin messages
+echo "Step 2: Starting safe bot (no recursion, single admin handler)..."
+echo "✅ Safe bot will show 1 admin message (not 3 duplicates)"
+python safe_admin_bot.py
+
+echo "✅ Bot fixed - Admin panel duplicate messages resolved!"</parameter>

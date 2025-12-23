@@ -1,0 +1,74 @@
+<parameter name="content">#!/usr/bin/env python3
+
+import os
+import re
+import glob
+
+def find_admin_handlers():
+    """Find all admin handler registrations in bot files"""
+    admin_patterns = [
+        r'CallbackQueryHandler\s*\(\s*admin_panel\s*\)',
+        r'admin_panel\s*,\s*pattern\s*=\s*["\']\^admin\$["\']',
+        r'app\.add_handler.*admin_panel',
+        r'admin_panel.*pattern.*admin'
+    ]
+    
+    bot_files = [
+        'run.py',
+        'run_fixed.py', 
+        'working_bot.py',
+        'simple_bot.py',
+        'debug_bot_startup.py',
+        'app/bot/dispatcher.py',
+        'app/bot/dispatcher_fixed.py',
+        'app/bot/main.py'
+    ]
+    
+    print("🔍 Searching for duplicate admin handlers...")
+    print("=" * 60)
+    
+    found_handlers = []
+    
+    for file_path in bot_files:
+        if os.path.exists(file_path):
+            print(f"\n📁 Checking: {file_path}")
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    
+                for i, line in enumerate(content.splitlines(), 1):
+                    for pattern in admin_patterns:
+                        if re.search(pattern, line, re.IGNORECASE):
+                            print(f"   Line {i}: {line.strip()}")
+                            found_handlers.append({
+                                'file': file_path,
+                                'line': i,
+                                'content': line.strip(),
+                                'pattern': pattern
+                            })
+                            
+            except Exception as e:
+                print(f"   ❌ Error reading file: {e}")
+        else:
+            print(f"\n📁 File not found: {file_path}")
+    
+    print(f"\n📊 Total admin handlers found: {len(found_handlers)}")
+    return found_handlers
+
+if __name__ == "__main__":
+    handlers = find_admin_handlers()
+    
+    # Group by file to see duplicates
+    files_with_handlers = {}
+    for handler in handlers:
+        file_path = handler['file']
+        if file_path not in files_with_handlers:
+            files_with_handlers[file_path] = []
+        files_with_handlers[file_path].append(handler)
+    
+    print(f"\n🔍 Files with multiple admin handlers:")
+    for file_path, file_handlers in files_with_handlers.items():
+        if len(file_handlers) > 1:
+            print(f"⚠️  {file_path}: {len(file_handlers)} handlers")
+            for handler in file_handlers:
+                print(f"   - Line {handler['line']}: {handler['content']}")</parameter>

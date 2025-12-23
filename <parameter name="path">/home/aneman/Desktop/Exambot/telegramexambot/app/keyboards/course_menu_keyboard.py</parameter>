@@ -1,0 +1,22 @@
+<parameter name="content">"""
+Course Menu Keyboard
+Shows options after selecting a specific course from stream
+"""
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+def get_course_menu_keyboard(course_code, course_name):
+    """Get menu keyboard for a specific course"""
+    
+    keyboard = [
+        [InlineKeyboardButton("📝 Start Exam", callback_data=f"start_exam_{course_code}")],
+        [InlineKeyboardButton("🏃 Practice Mode", callback_data=f"practice_{course_code}")],
+        [InlineKeyboardButton("📚 Study Materials", callback_data=f"materials_{course_code}")],
+        [InlineKeyboardButton("📊 Analytics", callback_data=f"analytics_{course_code}")]
+    ]
+    
+    return keyboard
+
+def get_back_button():
+    """Get back button"""
+    return [InlineKeyboardButton("↩️ Back to Courses", callback_data="exams")]</parameter>

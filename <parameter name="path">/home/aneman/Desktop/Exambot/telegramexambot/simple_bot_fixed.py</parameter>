@@ -1,0 +1,160 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Simple Bot Implementation - Bypassing Dispatcher Issues
+Direct handler registration without using the problematic dispatcher_fixed.py
+"""
+
+import sys
+import logging
+import signal
+from pathlib import Path
+
+# Add app to path
+sys.path.append(str(Path(__file__).parent))
+
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,
+    filters
+)
+
+from app.config.settings import BOT_TOKEN
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Global app reference for graceful shutdown
+global_app = None
+
+def signal_handler(signum, frame):
+    """Handle graceful shutdown"""
+    logger.info("Received shutdown signal, stopping bot...")
+    if global_app:
+        try:
+            global_app.stop()
+        except Exception as e:
+            logger.warning(f"Error during graceful shutdown: {e}")
+    sys.exit(0)
+
+# Import handlers directly (only the ones that exist)
+try:
+    from app.handlers.start_handler import start
+    from app.handlers.register_handler import register, handle_registration_callback
+    from app.handlers.menu_handler import menu
+    from app.handlers.admin_handler import admin_panel, admin_users, admin_payments, admin_questions_menu, admin_results, admin_export_menu, admin_back_main
+    from app.handlers.help_handler import help_handler
+    from app.handlers.course_handler import select_course
+    from app.handlers.question_handler import answer_question
+    from app.handlers.materials_handler import materials_menu
+    from app.handlers.practice_handler import start_practice
+    logger.info("✅ All handler imports successful!")
+except ImportError as e:
+    logger.error(f"❌ Handler import failed: {e}")
+    # Continue with minimal handlers
+    pass
+
+def register_handlers_direct(app):
+    """Direct handler registration to bypass dispatcher issues"""
+    try:
+        # Basic handlers that should always work
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(CommandHandler("register", register))
+        app.add_handler(CommandHandler("help", help_handler))
+        app.add_handler(CommandHandler("admin", admin_panel))
+
+        # Admin panel handlers
+        app.add_handler(CallbackQueryHandler(admin_panel, pattern="^admin$"))
+        app.add_handler(CallbackQueryHandler(admin_users, pattern="^admin_users$"))
+        app.add_handler(CallbackQueryHandler(admin_payments, pattern="^admin_payments$"))
+        app.add_handler(CallbackQueryHandler(admin_questions_menu, pattern="^admin_questions$"))
+        app.add_handler(CallbackQueryHandler(admin_results, pattern="^admin_results$"))
+        app.add_handler(CallbackQueryHandler(admin_export_menu, pattern="^admin_export$"))
+        app.add_handler(CallbackQueryHandler(admin_back_main, pattern="^admin_back_main$"))
+
+        # Menu handlers
+        app.add_handler(CallbackQueryHandler(menu, pattern="^(exams|materials|help|admin|back_to_main)$"))
+        app.add_handler(CallbackQueryHandler(menu))
+
+        # Course handlers
+        app.add_handler(CallbackQueryHandler(select_course, pattern="^exam_course_"))
+
+        # Materials handlers
+        app.add_handler(CallbackQueryHandler(materials_menu, pattern="^materials$"))
+
+        # Practice handlers
+        app.add_handler(CallbackQueryHandler(start_practice, pattern="^practice$"))
+
+        # Question handlers
+        app.add_handler(CallbackQueryHandler(answer_question, pattern="^ans_"))
+
+        # Registration callback handlers
+        app.add_handler(CallbackQueryHandler(handle_registration_callback, pattern="^(level_|stream_)"))
+
+        logger.info("✅ All handlers registered successfully!")
+
+    except Exception as e:
+        logger.error(f"❌ Handler registration failed: {e}")
+        raise
+
+def init_db():
+    """Initialize database tables"""
+    try:
+        from app.database.base import Base
+        from app.database.session import engine
+        
+        Base.metadata.create_all(bind=engine)
+        logger.info("✅ Database initialized successfully")
+        return True
+    except Exception as e:
+        logger.warning(f"⚠️ Database initialization warning: {e}")
+        return False
+
+def main():
+    """Main bot startup function"""
+    global global_app
+    
+    # Setup signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    try:
+        logger.info("🚀 Starting Simple Bot (Fixed Version)...")
+        
+        # Initialize database
+        init_db()
+        
+        # Build application
+        app = ApplicationBuilder().token(BOT_TOKEN).build()
+        global_app = app
+        
+        # Register handlers directly
+        register_handlers_direct(app)
+        
+        # Initialize and start
+        app.initialize()
+        app.start()
+        
+        logger.info("✅ Bot application built successfully with direct handler registration")
+        
+        # Start polling
+        logger.info("📡 Starting bot polling...")
+        app.run_polling(
+            allowed_updates=['message', 'callback_query'],
+            drop_pending_updates=True,
+            timeout=30
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Bot startup failed: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()</parameter>

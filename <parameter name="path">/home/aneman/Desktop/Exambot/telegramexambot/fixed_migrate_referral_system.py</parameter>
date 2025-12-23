@@ -1,0 +1,76 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Fixed Database Migration Script for Profile & Referral System
+"""
+import sqlite3
+import os
+from datetime import datetime
+
+def migrate_database():
+    """Fix the database migration for referral system"""
+    db_path = "data/bot.db"
+    
+    if not os.path.exists(db_path):
+        print(f"❌ Database not found: {db_path}")
+        return False
+        
+    print("🚀 Profile & Referral System - Database Migration")
+    print("=" * 50)
+    print("🔄 Starting database migration for referral system...")
+    print(f"📂 Connected to database: {os.path.abspath(db_path)}")
+    
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Get current table structure
+        cursor.execute("PRAGMA table_info(users)")
+        columns = {row[1] for row in cursor.fetchall()}
+        print(f"📋 Current columns in users table: {list(columns)}")
+        
+        # Add columns if they don't exist (without UNIQUE constraint initially)
+        new_columns = [
+            ("referral_code", "TEXT"),
+            ("referred_by_id", "INTEGER"),
+            ("total_referrals", "INTEGER DEFAULT 0"),
+            ("total_commission", "INTEGER DEFAULT 0"),
+            ("is_referral_active", "BOOLEAN DEFAULT 1")
+        ]
+        
+        for column_name, column_type in new_columns:
+            if column_name not in columns:
+                print(f"➕ Will add column: {column_name}")
+                try:
+                    cursor.execute(f"ALTER TABLE users ADD COLUMN {column_name} {column_type}")
+                    print(f"✅ Successfully added column: {column_name}")
+                except sqlite3.Error as e:
+                    print(f"❌ Failed to add column {column_name}: {e}")
+            else:
+                print(f"✅ Column {column_name} already exists")
+        
+        # Create unique index for referral codes after migration
+        try:
+            cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_referral_code ON users(referral_code)")
+            print("✅ Created unique index for referral_code")
+        except sqlite3.Error as e:
+            print(f"⚠️  Could not create unique index: {e}")
+        
+        conn.commit()
+        print("\n🎉 Migration completed successfully!")
+        print("=" * 50)
+        return True
+        
+    except sqlite3.Error as e:
+        print(f"\n❌ Migration failed: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+if __name__ == "__main__":
+    success = migrate_database()
+    if success:
+        print("\n✅ Database migration completed successfully!")
+        print("🚀 Profile & Referral System is ready to use!")
+    else:
+        print("\n❌ Database migration failed. Please check the error messages above.")</parameter>

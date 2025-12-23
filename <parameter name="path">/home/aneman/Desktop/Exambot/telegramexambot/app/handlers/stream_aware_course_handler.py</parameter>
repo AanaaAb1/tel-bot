@@ -1,0 +1,136 @@
+<parameter name="content">"""
+Stream-Aware Course Handler
+Updates existing course logic to use stream-based filtering
+"""
+
+import logging
+from telegram import Update
+from telegram.ext import ContextTypes, CallbackQueryHandler
+from app.database.session import SessionLocal
+from app.models.user import User
+from app.keyboards.stream_course_keyboard import get_stream_courses_keyboard, get_stream_courses_message
+
+logger = logging.getLogger(__name__)
+
+async def exams_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle exam selection with stream awareness"""
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = update.effective_user.id
+    
+    try:
+        db = SessionLocal()
+        user = db.query(User).filter(User.user_id == str(user_id)).first()
+        
+        if not user:
+            await query.edit_message_text("❌ User not found. Please register first.")
+            return
+        
+        # Get user's stream
+        user_stream = getattr(user, 'stream', None)
+        if not user_stream:
+            await query.edit_message_text("❌ Stream not set. Please complete registration.")
+            return
+        
+        # Get stream-specific course keyboard and message
+        keyboard = get_stream_courses_keyboard(user_stream)
+        message = get_stream_courses_message(user_stream)
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=keyboard,
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in stream-aware exams handler: {e}")
+        await query.edit_message_text("❌ An error occurred. Please try again.")
+    finally:
+        db.close()
+
+async def handle_course_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle course selection with stream validation"""
+    query = update.callback_query
+    await query.answer()
+    
+    course_code = query.data.replace("course_", "")
+    
+    user_id = update.effective_user.id
+    
+    try:
+        db = SessionLocal()
+        user = db.query(User).filter(User.user_id == str(user_id)).first()
+        
+        if not user:
+            await query.edit_message_text("❌ User not found. Please register first.")
+            return
+        
+        # Validate course is available in user's stream
+        user_stream = getattr(user, 'stream', None)
+        if not user_stream:
+            await query.edit_message_text("❌ Stream not set. Please complete registration.")
+            return
+        
+        # Check if course is available in user's stream
+        valid_courses = get_stream_courses_keyboard(user_stream)
+        if not is_course_valid_for_stream(course_code, user_stream):
+            await query.edit_message_text("❌ This course is not available in your stream.")
+            return
+        
+        # Course name mapping for display
+        course_names = {
+            "bio": "Biology",
+            "physics": "Physics",
+            "chemistry": "Chemistry", 
+            "english": "English",
+            "maths": "Mathematics",
+            "geography": "Geography",
+            "history": "History"
+        }
+        
+        course_name = course_names.get(course_code, course_code.title())
+        
+        # Show course-specific menu (exams/practice/materials)
+        from app.keyboards.course_menu_keyboard import get_course_menu_keyboard, get_back_button
+        
+        keyboard = get_course_menu_keyboard(course_code, course_name)
+        keyboard.extend(get_back_button())
+        
+        await query.edit_message_text(
+            f"📚 **{course_name}**\n\nChoose an option:",
+            reply_markup=keyboard,
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in course selection: {e}")
+        await query.edit_message_text("❌ An error occurred. Please try again.")
+    finally:
+        db.close()
+
+def is_course_valid_for_stream(course_code, user_stream):
+    """Check if course is available in the user's stream"""
+    if user_stream == "natural_science":
+        valid_courses = ["bio", "physics", "chemistry", "english", "maths"]
+    elif user_stream == "social_science":
+        valid_courses = ["maths", "english", "geography", "history"]
+    else:
+        valid_courses = ["maths", "english"]  # default fallback
+    
+    return course_code in valid_courses
+
+def register_stream_aware_course_handlers(application):
+    """Register stream-aware course handlers"""
+    # Replace existing exams handler with stream-aware version
+    application.add_handler(CallbackQueryHandler(
+        exams_handler, 
+        pattern="^exams$"
+    ))
+    
+    # Replace existing course selection with stream-validated version
+    application.add_handler(CallbackQueryHandler(
+        handle_course_selected, 
+        pattern="^course_"
+    ))
+</parameter>
