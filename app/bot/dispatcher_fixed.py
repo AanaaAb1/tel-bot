@@ -28,6 +28,20 @@ from app.handlers.admin_handler import (
 )
 from app.handlers.course_handler import select_course, start_exam_selected
 from app.handlers.question_handler import answer_question, show_detailed_result
+from app.handlers.stream_dashboard_handler import (
+    natural_science_dashboard, 
+    social_science_dashboard,
+    handle_natural_science_action,
+    handle_social_science_action,
+    natural_science_exams,
+    social_science_exams
+)
+from app.handlers.stream_course_handler import (
+    select_natural_science_course,
+    select_social_science_course,
+    handle_stream_course_selection,
+    get_stream_course_handler
+)
 from app.handlers.practice_handler import (
     start_practice,
     practice_by_course,
@@ -37,7 +51,6 @@ from app.handlers.practice_handler import (
     practice_chapter_selected
 )
 from app.handlers.radio_question_handler import handle_poll_answer
-from app.handlers.stream_course_handler import get_stream_course_handler
 
 def register_handlers(app):
     app.add_handler(CommandHandler("start", start))
@@ -85,6 +98,16 @@ def register_handlers(app):
 
     # Stream course selection handler (must be before general course handler)
     app.add_handler(get_stream_course_handler())
+    
+    # Stream dashboard handlers (specific patterns first)
+    app.add_handler(CallbackQueryHandler(natural_science_dashboard, pattern="^natural_science_dashboard$"))
+    app.add_handler(CallbackQueryHandler(social_science_dashboard, pattern="^social_science_dashboard$"))
+    app.add_handler(CallbackQueryHandler(handle_natural_science_action, pattern="^ns_"))
+    app.add_handler(CallbackQueryHandler(handle_social_science_action, pattern="^ss_"))
+    app.add_handler(CallbackQueryHandler(natural_science_exams, pattern="^ns_exams$"))
+    app.add_handler(CallbackQueryHandler(social_science_exams, pattern="^ss_exams$"))
+    app.add_handler(CallbackQueryHandler(select_natural_science_course, pattern="^select_ns_course$"))
+    app.add_handler(CallbackQueryHandler(select_social_science_course, pattern="^select_ss_course$"))
     
     # Course selection handlers
     app.add_handler(CallbackQueryHandler(select_course, pattern="^exam_course_"))

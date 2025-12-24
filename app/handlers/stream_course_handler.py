@@ -1,177 +1,349 @@
 """
-Stream-Specific Course Handler
-Handles course selection from stream-specific keyboards
+Stream-Specific Course Selection Handlers
+Handle course selection for Natural Science and Social Science streams
 """
 
-from telegram import Update, InlineKeyboardMarkup
-from telegram.ext import CallbackContext, CallbackQueryHandler, ConversationHandler
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import CallbackQueryHandler
+from app.database.session import SessionLocal
 from app.models.user import User
-from app.keyboards.course_menu_keyboard import get_course_menu_keyboard, get_course_menu_message
-from app.utils.access_control import check_course_access
-
-# Course state
-BIOLOGY, PHYSICS, CHEMISTRY, MATHEMATICS, ENGLISH, GEOGRAPHY, HISTORY = range(7)
-
-async def stream_course_callback(update: Update, context: CallbackContext):
-    """Handle stream course button clicks"""
-    query = update.callback_query
-    await query.answer()
-    
-    # Get user from database
-    user = User.get_by_telegram_id(update.effective_user.id)
-    if not user:
-        await query.edit_message_text("❌ User not found. Please register first.")
-        return ConversationHandler.END
-    
-    # Extract course from callback data
-    callback_data = query.data
-    if not callback_data.startswith("stream_course_"):
-        await query.edit_message_text("❌ Invalid course selection.")
-        return ConversationHandler.END
-    
-    course_code = callback_data.replace("stream_course_", "")
-    
-    # Map course codes to course names and states
-    course_mapping = {
-        "bio": ("Biology", BIOLOGY),
-        "physics": ("Physics", PHYSICS),
-        "chemistry": ("Chemistry", CHEMISTRY),
-        "maths": ("Mathematics", MATHEMATICS),
-        "english": ("English", ENGLISH),
-        "geography": ("Geography", GEOGRAPHY),
-        "history": ("History", HISTORY)
-    }
-    
-    if course_code not in course_mapping:
-        await query.edit_message_text("❌ Course not found.")
-        return ConversationHandler.END
-    
-    course_name, course_state = course_mapping[course_code]
-    
-    # Validate course access based on user's stream
-    if not check_course_access(user, course_name):
-        stream_name = user.stream.replace("_", " ").title() if user.stream else "Unknown"
-        await query.edit_message_text(
-            f"❌ **{course_name}** is not available for {stream_name} stream.\n\n"
-            f"Please select a course available in your stream.",
-            parse_mode='Markdown'
-        )
-        return ConversationHandler.END
-    
-    # Store selected course in user context
-    context.user_data['selected_course'] = course_name
-    context.user_data['course_state'] = course_state
-    
-    # Show course menu
-    course_menu_message = get_course_menu_message(course_name)
-    course_menu_keyboard = get_course_menu_keyboard()
-    
-    await query.edit_message_text(
-        course_menu_message,
-        reply_markup=course_menu_keyboard,
-        parse_mode='Markdown'
-    )
-    
-    return course_state
-
-async def handle_course_menu_callback(update: Update, context: CallbackContext):
-    """Handle course menu button clicks"""
-    query = update.callback_query
-    await query.answer()
-    
-    selected_course = context.user_data.get('selected_course')
-    if not selected_course:
-        await query.edit_message_text("❌ No course selected. Please select a course first.")
-        return ConversationHandler.END
-    
-    callback_data = query.data
-    
-    # Handle different course menu actions
-    if callback_data == "back_to_courses":
-        # Return to course selection
-        from app.keyboards.stream_course_keyboard import get_stream_courses_keyboard, get_stream_courses_message
-        
-        user = User.get_by_telegram_id(update.effective_user.id)
-        if user and user.stream:
-            user_id = update.effective_user.id
-            courses_message = get_stream_courses_message(user.stream, user_id)
-            courses_keyboard = get_stream_courses_keyboard(user.stream, user_id)
-            
-            await query.edit_message_text(
-                courses_message,
-                reply_markup=courses_keyboard,
-                parse_mode='Markdown'
-            )
-            return ConversationHandler.END
-        else:
-            await query.edit_message_text("❌ Stream information not found.")
-            return ConversationHandler.END
-    
-    elif callback_data.startswith("exam_"):
-        # Handle exam selection for the course
-        await query.edit_message_text(
-            f"📝 **{selected_course} Exams**\n\n"
-            f"Exam functionality for {selected_course} will be available soon!",
-            parse_mode='Markdown'
-        )
-        return context.user_data.get('course_state', BIOLOGY)
-    
-    elif callback_data.startswith("practice_"):
-        # Handle practice selection for the course
-        await query.edit_message_text(
-            f"🎯 **{selected_course} Practice**\n\n"
-            f"Practice sessions for {selected_course} will be available soon!",
-            parse_mode='Markdown'
-        )
-        return context.user_data.get('course_state', BIOLOGY)
-    
-    elif callback_data.startswith("materials_"):
-        # Handle materials selection for the course
-        await query.edit_message_text(
-            f"📚 **{selected_course} Materials**\n\n"
-            f"Study materials for {selected_course} will be available soon!",
-            parse_mode='Markdown'
-        )
-        return context.user_data.get('course_state', BIOLOGY)
-    
-    elif callback_data.startswith("analytics_"):
-        # Handle analytics for the course
-        await query.edit_message_text(
-            f"📊 **{selected_course} Analytics**\n\n"
-            f"Performance analytics for {selected_course} will be available soon!",
-            parse_mode='Markdown'
-        )
-        return context.user_data.get('course_state', BIOLOGY)
-    
-    else:
-        await query.edit_message_text("❌ Invalid menu option selected.")
-        return context.user_data.get('course_state', BIOLOGY)
+from app.handlers.course_handler import start_exam_selected
+from app.handlers.exam_handler import start_exam
+from app.config.constants import ADMIN_IDS
+from telegram.error import BadRequest
 
 def get_stream_course_handler():
-    """Get the stream course conversation handler"""
-    from app.keyboards.stream_course_keyboard import get_stream_courses_keyboard, get_stream_courses_message
-    
-    # Course selection conversation handler
-    course_selection_handler = ConversationHandler(
-        entry_points=[
-            CallbackQueryHandler(stream_course_callback, pattern=r"^stream_course_")
-        ],
-        states={
-            BIOLOGY: [CallbackQueryHandler(handle_course_menu_callback)],
-            PHYSICS: [CallbackQueryHandler(handle_course_menu_callback)],
-            CHEMISTRY: [CallbackQueryHandler(handle_course_menu_callback)],
-            MATHEMATICS: [CallbackQueryHandler(handle_course_menu_callback)],
-            ENGLISH: [CallbackQueryHandler(handle_course_menu_callback)],
-            GEOGRAPHY: [CallbackQueryHandler(handle_course_menu_callback)],
-            HISTORY: [CallbackQueryHandler(handle_course_menu_callback)],
-        },
-        fallbacks=[
-            CallbackQueryHandler(handle_course_menu_callback, pattern=r"^back_to_courses$"),
-            CallbackQueryHandler(handle_course_menu_callback, pattern=r"^exam_"),
-            CallbackQueryHandler(handle_course_menu_callback, pattern=r"^practice_"),
-            CallbackQueryHandler(handle_course_menu_callback, pattern=r"^materials_"),
-            CallbackQueryHandler(handle_course_menu_callback, pattern=r"^analytics_"),
+    """Return handler for stream-specific course selection"""
+    return CallbackQueryHandler(handle_stream_course_selection, pattern="^select_(ns|ss)_course$")
+
+async def select_natural_science_course(update, context):
+    """Display Natural Science stream course selection"""
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+
+    # Check if user is admin (admins can access all courses)
+    if user_id in ADMIN_IDS:
+        # Show all Natural Science courses to admin users
+        courses = [
+            ("📐 Mathematics", "maths"),
+            ("📝 English", "english"),
+            ("🧬 Biology", "bio"),
+            ("⚛️ Physics", "physics"),
+            ("⚗️ Chemistry", "chemistry")
         ]
-    )
+        message = """
+👑 Admin View: Natural Science Stream Courses
+
+🎓 All Available Courses for Natural Science Stream:
+
+• Mathematics, English
+• Biology, Physics, Chemistry
+
+Select a course to start your exam:
+        """
+        
+        # Create keyboard
+        keyboard = []
+        for course_name, course_code in courses:
+            keyboard.append([InlineKeyboardButton(
+                course_name,
+                callback_data=f"start_exam_{course_code}"
+            )])
+        
+        keyboard.append([InlineKeyboardButton("↩️ Back to Dashboard", callback_data="natural_science_dashboard")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            message,
+            reply_markup=reply_markup
+        )
+        return
+
+    # Get user information
+    db = SessionLocal()
+    user = db.query(User).filter_by(telegram_id=user_id).first()
+    db.close()
+
+    if not user:
+        await query.edit_message_text("❌ User information not found. Please register again.")
+        return
+
+    # Verify user has Natural Science stream access
+    if user.stream != "natural_science":
+        await query.edit_message_text("❌ Access denied. This section is for Natural Science stream users only.")
+        return
+
+    # Check access
+    if user.access == "LOCKED":
+        from app.keyboards.payment_keyboard import payment_keyboard
+        await query.edit_message_text(
+            "⚠️ Access Restricted\n\n"
+            "You must complete payment to access Natural Science stream exams.\n\n"
+            "Please proceed to payment and wait for admin approval.",
+            reply_markup=payment_keyboard()
+        )
+        return
+
+    # Define Natural Science courses based on user level
+    if user.level and user.level.lower() == "remedial":
+        # Remedial Natural Science students get basic science courses
+        courses = [
+            ("📐 Mathematics", "maths"),
+            ("📝 English", "english"),
+            ("🧬 Biology", "bio"),
+            ("⚛️ Physics", "physics"),
+            ("⚗️ Chemistry", "chemistry")
+        ]
+        message = """
+🧬 Natural Science Stream - Remedial Level
+
+🔰 Available Courses for Remedial Students:
+
+Common Subjects:
+• Mathematics, English
+
+Science Subjects:
+• Biology, Physics, Chemistry
+
+Select a course to start your exam:
+        """
+    elif user.level and user.level.lower() == "freshman":
+        # Freshman Natural Science students get all available courses
+        courses = [
+            ("📐 Mathematics", "maths"),
+            ("📝 English", "english"),
+            ("🧬 Biology", "bio"),
+            ("⚛️ Physics", "physics"),
+            ("⚗️ Chemistry", "chemistry")
+        ]
+        message = """
+🧬 Natural Science Stream - Freshman Level
+
+🎓 Available Courses for Freshman Students:
+
+All Natural Science Subjects:
+• Mathematics, English
+• Biology, Physics, Chemistry
+
+Select a course to start your exam:
+        """
+    else:
+        # Default to basic courses
+        courses = [
+            ("📐 Mathematics", "maths"),
+            ("📝 English", "english")
+        ]
+        message = """
+🧬 Natural Science Stream Courses
+
+📚 Available Courses:
+
+Basic Subjects:
+• Mathematics, English
+
+Select a course to start your exam:
+        """
+
+    # Create keyboard
+    keyboard = []
+    for course_name, course_code in courses:
+        keyboard.append([InlineKeyboardButton(
+            course_name,
+            callback_data=f"start_exam_{course_code}"
+        )])
     
-    return course_selection_handler
+    keyboard.append([InlineKeyboardButton("↩️ Back to Dashboard", callback_data="natural_science_dashboard")])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        message,
+        reply_markup=reply_markup
+    )
+
+async def select_social_science_course(update, context):
+    """Display Social Science stream course selection"""
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+
+    # Check if user is admin (admins can access all courses)
+    if user_id in ADMIN_IDS:
+        # Show all Social Science courses to admin users
+        courses = [
+            ("📐 Mathematics", "maths"),
+            ("📝 English", "english"),
+            ("📜 History", "history"),
+            ("🌍 Geography", "geography"),
+            ("🏛️ Government", "government"),
+            ("💰 Economics", "economics"),
+            ("📚 Literature", "literature")
+        ]
+        message = """
+👑 Admin View: Social Science Stream Courses
+
+🎓 All Available Courses for Social Science Stream:
+
+• Mathematics, English
+• History, Geography, Government
+• Economics, Literature
+
+Select a course to start your exam:
+        """
+        
+        # Create keyboard
+        keyboard = []
+        for course_name, course_code in courses:
+            keyboard.append([InlineKeyboardButton(
+                course_name,
+                callback_data=f"start_exam_{course_code}"
+            )])
+        
+        keyboard.append([InlineKeyboardButton("↩️ Back to Dashboard", callback_data="social_science_dashboard")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            message,
+            reply_markup=reply_markup
+        )
+        return
+
+    # Get user information
+    db = SessionLocal()
+    user = db.query(User).filter_by(telegram_id=user_id).first()
+    db.close()
+
+    if not user:
+        await query.edit_message_text("❌ User information not found. Please register again.")
+        return
+
+    # Verify user has Social Science stream access
+    if user.stream != "social_science":
+        await query.edit_message_text("❌ Access denied. This section is for Social Science stream users only.")
+        return
+
+    # Check access
+    if user.access == "LOCKED":
+        from app.keyboards.payment_keyboard import payment_keyboard
+        await query.edit_message_text(
+            "⚠️ Access Restricted\n\n"
+            "You must complete payment to access Social Science stream exams.\n\n"
+            "Please proceed to payment and wait for admin approval.",
+            reply_markup=payment_keyboard()
+        )
+        return
+
+    # Define Social Science courses based on user level
+    if user.level and user.level.lower() == "remedial":
+        # Remedial Social Science students get basic social studies courses
+        courses = [
+            ("📐 Mathematics", "maths"),
+            ("📝 English", "english"),
+            ("📜 History", "history"),
+            ("🌍 Geography", "geography")
+        ]
+        message = """
+🌍 Social Science Stream - Remedial Level
+
+🔰 Available Courses for Remedial Students:
+
+Common Subjects:
+• Mathematics, English
+
+Social Studies:
+• History, Geography
+
+Select a course to start your exam:
+        """
+    elif user.level and user.level.lower() == "freshman":
+        # Freshman Social Science students get all available courses
+        courses = [
+            ("📐 Mathematics", "maths"),
+            ("📝 English", "english"),
+            ("📜 History", "history"),
+            ("🌍 Geography", "geography"),
+            ("🏛️ Government", "government"),
+            ("💰 Economics", "economics"),
+            ("📚 Literature", "literature")
+        ]
+        message = """
+🌍 Social Science Stream - Freshman Level
+
+🎓 Available Courses for Freshman Students:
+
+All Social Science Subjects:
+• Mathematics, English
+• History, Geography, Government
+• Economics, Literature
+
+Select a course to start your exam:
+        """
+    else:
+        # Default to basic courses
+        courses = [
+            ("📐 Mathematics", "maths"),
+            ("📝 English", "english")
+        ]
+        message = """
+🌍 Social Science Stream Courses
+
+📚 Available Courses:
+
+Basic Subjects:
+• Mathematics, English
+
+Select a course to start your exam:
+        """
+
+    # Create keyboard
+    keyboard = []
+    for course_name, course_code in courses:
+        keyboard.append([InlineKeyboardButton(
+            course_name,
+            callback_data=f"start_exam_{course_code}"
+        )])
+    
+    keyboard.append([InlineKeyboardButton("↩️ Back to Dashboard", callback_data="social_science_dashboard")])
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        message,
+        reply_markup=reply_markup
+    )
+
+async def handle_stream_course_selection(update, context):
+    """Handle stream-specific course exam start"""
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+    course_code = query.data.replace("start_exam_", "")
+
+    # Get user information
+    db = SessionLocal()
+    user = db.query(User).filter_by(telegram_id=user_id).first()
+    db.close()
+
+    if not user:
+        await query.edit_message_text("❌ User information not found. Please register again.")
+        return
+
+    # Verify user has appropriate stream access for the course
+    natural_science_courses = ["maths", "english", "bio", "physics", "chemistry"]
+    social_science_courses = ["maths", "english", "history", "geography", "government", "economics", "literature"]
+
+    if user.stream == "natural_science" and course_code not in natural_science_courses:
+        await query.edit_message_text("❌ Access denied. This course is not available in your Natural Science stream.")
+        return
+    elif user.stream == "social_science" and course_code not in social_science_courses:
+        await query.edit_message_text("❌ Access denied. This course is not available in your Social Science stream.")
+        return
+
+    # Start the exam
+    await start_exam_selected(update, context)

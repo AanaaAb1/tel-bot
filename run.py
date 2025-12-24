@@ -8,6 +8,7 @@ import sys
 import logging
 import signal
 import subprocess
+import asyncio
 from pathlib import Path
 
 # Add app to path
@@ -56,7 +57,8 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     
     try:
-        logger.info("🚀 Starting Telegram Exam Bot (Working Version)...")
+        logger.info("🚀 Starting Smart Test Exam (Working Version)...")
+        logger.info(f"🔑 Using bot token: {BOT_TOKEN[:20]}...")
         
         # Clean up any existing bot processes first (but not current process)
         try:
@@ -101,15 +103,19 @@ def main():
         logger.info("💾 Initializing database...")
         init_db()
         
-        # Build application
-        app = ApplicationBuilder().token(BOT_TOKEN).build()
+        # Build application with custom API configuration
+        from app.config.settings import TELEGRAM_API_BASE_URL
+        
+        # Configure application with custom API base URL
+        if TELEGRAM_API_BASE_URL and TELEGRAM_API_BASE_URL != "https://api.telegram.org":
+            app = ApplicationBuilder().token(BOT_TOKEN).base_url(TELEGRAM_API_BASE_URL).build()
+            logger.info(f"🔗 Using custom API endpoint: {TELEGRAM_API_BASE_URL}")
+        else:
+            app = ApplicationBuilder().token(BOT_TOKEN).build()
+            logger.info("🔗 Using default Telegram API endpoint")
         
         # Register all handlers using consolidated dispatcher
         register_handlers(app)
-        
-        # Initialize the application
-        app.initialize()
-        app.start()
         
         logger.info("✅ Bot application built successfully with all handlers")
         
@@ -128,4 +134,6 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
+    # Run the main function directly since app.run_polling() handles the event loop
     main()
+

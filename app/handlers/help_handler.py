@@ -7,7 +7,7 @@ async def help_handler(update, context):
     
     # Create comprehensive help message
     help_text = """
-🤖 **Welcome to Telegram Exam Bot!**
+🤖 **Welcome to Smart Test Exam!**
 
 📚 **What is this bot?**
 This is an AI-powered exam preparation platform that helps you:

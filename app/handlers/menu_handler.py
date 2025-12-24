@@ -7,6 +7,14 @@ from app.handlers.materials_handler import materials_menu
 from app.handlers.leaderboard_handler import show_leaderboard, show_leaderboard_best, show_leaderboard_latest, show_leaderboard_average
 from app.handlers.profile_handler_fixed import profile_menu
 from app.handlers.course_handler import select_course, start_exam_selected
+from app.handlers.stream_dashboard_handler import (
+    natural_science_dashboard, 
+    social_science_dashboard,
+    handle_natural_science_action,
+    handle_social_science_action,
+    natural_science_exams,
+    social_science_exams
+)
 from app.keyboards.main_menu import main_menu
 from app.config.constants import ADMIN_IDS
 from app.database.session import SessionLocal
@@ -45,6 +53,25 @@ async def menu(update, context):
         await start_exam_selected(update, context)
     elif query.data == "profile":
         await profile_menu(update, context)
+    elif query.data == "courses":
+        # Route to stream-specific dashboard based on user's stream
+        db = SessionLocal()
+        user = db.query(User).filter_by(telegram_id=user_id).first()
+        db.close()
+        
+        if user and user.stream:
+            if user.stream == "natural_science":
+                await natural_science_dashboard(update, context)
+            elif user.stream == "social_science":
+                await social_science_dashboard(update, context)
+            else:
+                await query.edit_message_text(
+                    "❌ Stream information not found. Please register again to select your stream."
+                )
+        else:
+            await query.edit_message_text(
+                "❌ Stream information not found. Please register again to select your stream."
+            )
     elif query.data == "exams":
         # Show stream-specific course selection
         db = SessionLocal()
@@ -65,6 +92,18 @@ async def menu(update, context):
             await query.edit_message_text(
                 "❌ Stream information not found. Please register again to select your stream."
             )
+    elif query.data == "natural_science_dashboard":
+        await natural_science_dashboard(update, context)
+    elif query.data == "social_science_dashboard":
+        await social_science_dashboard(update, context)
+    elif query.data.startswith("ns_"):
+        await handle_natural_science_action(update, context)
+    elif query.data.startswith("ss_"):
+        await handle_social_science_action(update, context)
+    elif query.data == "ns_exams":
+        await natural_science_exams(update, context)
+    elif query.data == "ss_exams":
+        await social_science_exams(update, context)
     elif query.data == "payment":
         await payment_menu(update, context)
     elif query.data == "materials":
@@ -127,4 +166,3 @@ async def menu(update, context):
             )
         except BadRequest:
             await query.answer("Menu refreshed")
-
