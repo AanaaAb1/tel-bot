@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+
+{% block title %}Payments - SmartTest Admin Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-table-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .payment-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .payment-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .payment-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .payment-info h6 {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .payment-username {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .payment-status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .payment-status-approved {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .payment-status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .payment-status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .payment-amount {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .payment-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-approve {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+    }
+    
+    .btn-approve:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+    
+    .btn-reject {
+        background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        border: none;
+        color: white;
+    }
+    
+    .btn-reject:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(220, 53, 69, 0.4);
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card.total {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .stat-card.approved {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    
+    .stat-card.pending {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    }
+    
+    .stat-card.rejected {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .payment-details {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+    
+    .payment-detail-row {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .payment-detail-row:last-child {
+        margin-bottom: 0;
+    }
+    
+    .payment-detail-label {
+        font-weight: 600;
+        color: #666;
+    }
+    
+    .payment-detail-value {
+        color: #333;
+    }
+    
+    .search-container {
+        margin-bottom: 20px;
+    }
+    
+    .search-input {
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        padding: 12px 20px;
+        width: 100%;
+        max-width: 400px;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .filter-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-btn {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 2px solid #667eea;
+        background: transparent;
+        color: #667eea;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .filter-btn:hover,
+    .filter-btn.active {
+        background: #667eea;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">
+        <i class="fas fa-credit-card me-2 text-primary"></i>
+        Payment Management
+    </h1>
+</div>
+
+<!-- Payment Statistics -->
+<div class="stats-grid">
+    <div class="stat-card total">
+        <div class="stat-number">{{ payments|length }}</div>
+        <div class="stat-label">
+            <i class="fas fa-money-bill me-1"></i>
+            Total Payments
+        </div>
+    </div>
+    
+    <div class="stat-card approved">
+        <div class="stat-number">{{ payments|selectattr('status', 'equalto', 'approved')|list|length }}</div>
+        <div class="stat-label">
+            <i class="fas fa-check-circle me-1"></i>
+            Approved
+        </div>
+    </div>
+    
+    <div class="stat-card pending">
+        <div class="stat-number">{{ payments|selectattr('status', 'equalto', 'pending')|list|length }}</div>
+        <div class="stat-label">
+            <i class="fas fa-clock me-1"></i>
+            Pending
+        </div>
+    </div>
+    
+    <div class="stat-card rejected">
+        <div class="stat-number">{{ payments|selectattr('status', 'equalto', 'rejected')|list|length }}</div>
+        <div class="stat-label">
+            <i class="fas fa-times-circle me-1"></i>
+            Rejected
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="search-container">
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="search-group">
+            <i class="fas fa-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #666;"></i>
+            <input type="text" 
+                   class="search-input" 
+                   id="paymentSearch" 
+                   placeholder="Search payments by user, plan, or amount..."
+                   style="padding-left: 45px;">
+        </div>
+        
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">
+                <i class="fas fa-list me-1"></i>
+                All Payments
+            </button>
+            <button class="filter-btn" data-filter="pending">
+                <i class="fas fa-clock me-1"></i>
+                Pending
+            </button>
+            <button class="filter-btn" data-filter="approved">
+                <i class="fas fa-check me-1"></i>
+                Approved
+            </button>
+            <button class="filter-btn" data-filter="rejected">
+                <i class="fas fa-times me-1"></i>
+                Rejected
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Payments List -->
+<div class="payment-table-container">
+    {% if payments %}
+        {% for payment in payments %}
+        <div class="payment-card" data-payment-status="{{ payment.status }}">
+            <div class="payment-header">
+                <div class="payment-info">
+                    <h6>{{ payment.user.full_name or payment.user.username }}</h6>
+                    <div class="payment-username">
+                        <i class="fas fa-at me-1"></i>
+                        @{{ payment.user.username }}
+                    </div>
+                </div>
+                
+                <div class="text-end">
+                    <div class="payment-amount">
+                        ${{ "%.2f"|format(payment.amount) }}
+                    </div>
+                    <div class="mt-2">
+                        <span class="payment-status-badge payment-status-{{ payment.status }}">
+                            <i class="fas fa-{{ 'check-circle' if payment.status == 'approved' else 'clock' if payment.status == 'pending' else 'times-circle' }} me-1"></i>
+                            {{ payment.status.title() }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="payment-details">
+                <div class="payment-detail-row">
+                    <span class="payment-detail-label">
+                        <i class="fas fa-tag me-1"></i>
+                        Plan Type:
+                    </span>
+                    <span class="payment-detail-value">
+                        {{ payment.plan_type or 'Not specified' }}
+                    </span>
+                </div>
+                
+                <div class="payment-detail-row">
+                    <span class="payment-detail-label">
+                        <i class="fas fa-calendar me-1"></i>
+                        Payment Date:
+                    </span>
+                    <span class="payment-detail-value">
+                        {{ payment.created_at.strftime('%b %d, %Y %H:%M') }}
+                    </span>
+                </div>
+                
+                {% if payment.approved_at %}
+                <div class="payment-detail-row">
+                    <span class="payment-detail-label">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Approved Date:
+                    </span>
+                    <span class="payment-detail-value">
+                        {{ payment.approved_at.strftime('%b %d, %Y %H:%M') }}
+                    </span>
+                </div>
+                {% endif %}
+                
+                {% if payment.transaction_id %}
+                <div class="payment-detail-row">
+                    <span class="payment-detail-label">
+                        <i class="fas fa-receipt me-1"></i>
+                        Transaction ID:
+                    </span>
+                    <span class="payment-detail-value">
+                        {{ payment.transaction_id }}
+                    </span>
+                </div>
+                {% endif %}
+                
+                {% if payment.notes %}
+                <div class="payment-detail-row">
+                    <span class="payment-detail-label">
+                        <i class="fas fa-sticky-note me-1"></i>
+                        Notes:
+                    </span>
+                    <span class="payment-detail-value">
+                        {{ payment.notes }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if payment.status == 'pending' %}
+            <div class="payment-actions">
+                <form method="POST" action="{{ url_for('approve_payment', payment_id=payment.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-approve btn-sm">
+                        <i class="fas fa-check me-1"></i>
+                        Approve
+                    </button>
+                </form>
+                
+                <form method="POST" action="{{ url_for('reject_payment', payment_id=payment.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-reject btn-sm">
+                        <i class="fas fa-times me-1"></i>
+                        Reject
+                    </button>
+                </form>
+            </div>
+            {% elif payment.status == 'approved' %}
+            <div class="payment-actions">
+                <form method="POST" action="{{ url_for('reject_payment', payment_id=payment.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-reject btn-sm">
+                        <i class="fas fa-times me-1"></i>
+                        Revoke
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+            <h3 class="text-muted">No payments found</h3>
+            <p class="text-muted">No payment transactions have been recorded yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('paymentSearch');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const paymentCards = document.querySelectorAll('.payment-card');
+    
+    let currentFilter = 'all';
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filterPayments(searchTerm, currentFilter);
+    });
+    
+    // Filter functionality
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active button
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Apply filter
+            currentFilter = this.dataset.filter;
+            const searchTerm = searchInput.value.toLowerCase();
+            filterPayments(searchTerm, currentFilter);
+        });
+    });
+    
+    function filterPayments(searchTerm, filter) {
+        paymentCards.forEach(card => {
+            const userName = card.querySelector('h6').textContent.toLowerCase();
+            const userUsername = card.querySelector('.payment-username').textContent.toLowerCase();
+            const amount = card.querySelector('.payment-amount').textContent.toLowerCase();
+            const planType = card.querySelector('.payment-detail-row').textContent.toLowerCase();
+            const status = card.dataset.paymentStatus;
+            
+            // Search filter
+            const matchesSearch = !searchTerm || 
+                userName.includes(searchTerm) || 
+                userUsername.includes(searchTerm) ||
+                amount.includes(searchTerm) ||
+                planType.includes(searchTerm);
+            
+            // Status filter
+            const matchesFilter = filter === 'all' || status === filter;
+            
+            if (matchesSearch && matchesFilter) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    // Auto-hide success messages
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert-success');
+        alerts.forEach(alert => {
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 300);
+        });
+    }, 3000);
+    
+    // Format currency
+    document.querySelectorAll('.payment-amount').forEach(element => {
+        const amount = parseFloat(element.textContent.replace('$', ''));
+        element.textContent = '$' + amount.toFixed(2);
+    });
+});
+</script>
+{% endblock %}
+

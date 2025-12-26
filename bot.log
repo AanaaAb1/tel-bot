@@ -1,0 +1,24 @@
+nohup: ignoring input
+2025-12-24 12:29:38,846 - __main__ - INFO - 🚀 Starting Smart Test Exam (Working Version)...
+2025-12-24 12:29:38,846 - __main__ - INFO - 🔑 Using bot token: 7801283906:AAHsMFOq7...
+2025-12-24 12:29:38,846 - __main__ - INFO - 🧹 Current process PID: 2336
+2025-12-24 12:29:38,859 - __main__ - INFO - 🧹 Cleaned up existing bot processes
+2025-12-24 12:29:38,859 - __main__ - INFO - 💾 Initializing database...
+2025-12-24 12:29:38,861 - __main__ - INFO - ✅ Database initialized successfully
+2025-12-24 12:29:38,918 - __main__ - INFO - 🔗 Using default Telegram API endpoint
+2025-12-24 12:29:38,921 - __main__ - INFO - ✅ Bot application built successfully with all handlers
+2025-12-24 12:29:38,921 - __main__ - INFO - 📡 Starting bot polling...
+2025-12-24 12:29:39,624 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7801283906:AAHsMFOq7ycSkQ_9KZDa2I9nAQ4jFlMmAAw/getMe "HTTP/1.1 200 OK"
+2025-12-24 12:29:39,829 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7801283906:AAHsMFOq7ycSkQ_9KZDa2I9nAQ4jFlMmAAw/deleteWebhook "HTTP/1.1 200 OK"
+2025-12-24 12:29:39,832 - telegram.ext.Application - INFO - Application started
+2025-12-24 12:30:10,345 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7801283906:AAHsMFOq7ycSkQ_9KZDa2I9nAQ4jFlMmAAw/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 12:30:40,590 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7801283906:AAHsMFOq7ycSkQ_9KZDa2I9nAQ4jFlMmAAw/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 12:31:13,071 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7801283906:AAHsMFOq7ycSkQ_9KZDa2I9nAQ4jFlMmAAw/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 12:31:44,485 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7801283906:AAHsMFOq7ycSkQ_9KZDa2I9nAQ4jFlMmAAw/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 12:32:07,467 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7801283906:AAHsMFOq7ycSkQ_9KZDa2I9nAQ4jFlMmAAw/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 12:32:07,468 - telegram.ext.Application - INFO - Application is stopping. This might take a moment.
+2025-12-24 12:32:07,468 - telegram.ext.Application - INFO - Application.stop() complete
+✅ Constants loaded successfully
+👥 Admin IDs: [5642507992, 7342121804]
+💰 Payment statuses: ['pending', 'approved', 'rejected', 'completed']
+📚 User levels: ['freshman', 'remedial']

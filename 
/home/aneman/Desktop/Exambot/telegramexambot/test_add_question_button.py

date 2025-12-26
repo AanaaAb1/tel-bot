@@ -1,0 +1,57 @@
+
+#!/usr/bin/env python3
+"""
+Test script to verify Add Question button functionality
+"""
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from app.handlers.admin_question_handler import admin_add_question_from_course
+from app.config.constants import ADMIN_IDS
+
+def test_callback_data_parsing():
+    """Test parsing of callback data from Add Question button"""
+    # Simulate callback data from Add Question button
+    test_cases = [
+        "admin_add_question_1_Mathematics",
+        "admin_add_question_2_Chemistry", 
+        "admin_add_question_3_Biology",
+        "admin_add_question_10_Physics"
+    ]
+    
+    print("Testing callback data parsing:")
+    for callback_data in test_cases:
+        if callback_data.startswith("admin_add_question_"):
+            course_info = callback_data.replace("admin_add_question_", "")
+            parts = course_info.split("_", 1)
+            if len(parts) >= 2:
+                course_id = parts[0]
+                course_name = parts[1].replace("_", " ")
+                print(f"  {callback_data} -> Course ID: {course_id}, Course Name: {course_name}")
+            else:
+                print(f"  {callback_data} -> PARSING ERROR")
+        else:
+            print(f"  {callback_data} -> NOT AN ADD QUESTION CALLBACK")
+
+def test_admin_ids():
+    """Test admin ID configuration"""
+    print(f"\nAdmin IDs configured: {ADMIN_IDS}")
+    print(f"Number of admin IDs: {len(ADMIN_IDS)}")
+
+def test_handler_function_exists():
+    """Test that the handler function exists and is callable"""
+    print(f"\nHandler function 'admin_add_question_from_course' exists: {hasattr(admin_add_question_from_course, '__call__')}")
+    print(f"Function docstring: {admin_add_question_from_course.__doc__}")
+
+if __name__ == "__main__":
+    print("🧪 Add Question Button Test")
+    print("=" * 40)
+    
+    test_callback_data_parsing()
+    test_admin_ids()
+    test_handler_function_exists()
+    
+    print("\n✅ Test completed")
+

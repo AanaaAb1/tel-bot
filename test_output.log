@@ -1,0 +1,58 @@
+🔍 SIMPLE BOT DIAGNOSTIC TEST
+==================================================
+🔍 Testing Core Imports...
+  ✅ radio_question_handler imports successful
+✅ Constants loaded successfully
+👥 Admin IDs: [5642507992, 7342121804]
+💰 Payment statuses: ['pending', 'approved', 'rejected', 'completed']
+📚 User levels: ['freshman', 'remedial']
+  ✅ practice_handler imports successful
+  ✅ create_poll_question works: 2 options
+
+test_imports: ✅ PASS
+
+🔧 Testing Handler Functions...
+  ✅ handle_poll_answer signature correct
+  ✅ show_next_question signature correct
+
+test_handler_functions: ✅ PASS
+
+🎭 Testing Mock Scenario...
+  📝 Question text: 📝 Question 1/10
+
+What is 2+2?...
+  🔘 Options: ['A) 3', 'B) 4', 'C) 5', 'D) 6']
+  ✅ Correct option: 1 (should be 1 for B)
+  ✅ Correct answer mapping works
+
+test_mock_scenario: ✅ PASS
+
+📚 Testing Practice Flow Logic...
+  📊 Practice data setup:
+    - Total questions: 3
+    - Current index: 0
+    - Practice mode: True
+  📤 After answering question:
+    - New index: 1
+    - Should show next: True
+  📤 After answering second question:
+    - New index: 2
+    - Should show next: True
+  📤 After answering third question:
+    - New index: 3
+    - Should complete: True
+
+test_practice_flow_basic: ✅ PASS
+
+==================================================
+📊 SUMMARY
+==================================================
+Tests passed: 4/4
+
+🎉 All core tests passed!
+The radio_question_handler syntax issue has been FIXED.
+Next steps:
+  • Test with real Telegram bot
+  • Check bot permissions
+  • Verify database connectivity
+  • Test with actual question data

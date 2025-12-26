@@ -1,4 +1,3 @@
-import os
 from app.database.session import SessionLocal
 from app.models.user import User
 from app.models.payment import Payment
@@ -13,8 +12,20 @@ from app.keyboards.admin_keyboard import (
     get_admin_confirm_delete,
     get_payment_approval_keyboard
 )
+from app.handlers.admin_question_handler_fixed import (
+    admin_select_course_for_question,
+    admin_select_chapter_for_question,
+    admin_handle_question_step,
+    admin_handle_question_text_input,
+    admin_save_question,
+    admin_cancel_question_flow,
+    admin_confirm_cancel_question_flow,
+    admin_continue_question_flow
+)
 from app.keyboards.main_menu import main_menu
 from telegram import InputFile, InlineKeyboardButton, InlineKeyboardMarkup
+import io
+from datetime import datetime
 import io
 from datetime import datetime
 
@@ -22,34 +33,37 @@ from datetime import datetime
 async def safe_edit_message_text(update, text, reply_markup=None):
     """Safely edit a message with fallback to sending new message"""
     try:
-        if hasattr(update, 'callback_query') and update.callback_query:
-            await update.callback_query.message.edit_text(
-                text=text,
-                reply_markup=reply_markup
-            )
-        else:
-            # Fallback: send new message if no callback query
-            await update.message.reply_text(
-                text=text,
-                reply_markup=reply_markup
-            )
-    except Exception as e:
-        print(f"Error editing message: {e}")
-        # Fallback: send new message if edit fails
-        try:
-            if hasattr(update, 'callback_query') and update.callback_query:
+        # Check if this is a callback query (inline button click)
+        if update.callback_query:
+            try:
+                # Try to edit the message first
+                await update.callback_query.message.edit_text(
+                    text=text,
+                    reply_markup=reply_markup
+                )
+            except:
+                # If edit fails, try answering the callback and sending new message
                 await update.callback_query.answer()
                 await update.callback_query.message.reply_text(
                     text=text,
                     reply_markup=reply_markup
                 )
+        else:
+            # Regular message, send reply
+            await update.message.reply_text(
+                text=text,
+                reply_markup=reply_markup
+            )
+    except Exception as e:
+        print(f"Error in safe_edit_message_text: {e}")
+        # Last resort: try to send a simple message
+        try:
+            if update.callback_query:
+                await update.callback_query.answer(text)
             else:
-                await update.message.reply_text(
-                    text=text,
-                    reply_markup=reply_markup
-                )
-        except Exception as fallback_error:
-            print(f"Error in fallback message sending: {fallback_error}")
+                await update.message.reply_text(text)
+        except Exception as final_error:
+            print(f"Error in final fallback: {final_error}")
 
 # Admin panel main menu
 async def admin_panel(update, context):
@@ -126,7 +140,7 @@ async def admin_payments(update, context):
         return
 
     db = SessionLocal()
-    payments = db.query(Payment).filter_by(status="PENDING").all()
+    payments = db.query(Payment).filter_by(status="pending").all()
 
     if not payments:
         message_text = "💰 Payment Management\n\nNo pending payments found."

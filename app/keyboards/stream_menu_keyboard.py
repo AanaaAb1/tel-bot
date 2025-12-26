@@ -74,14 +74,14 @@ Select an option below:
 
 def get_social_science_dashboard_message(user):
     """Get Social Science Stream Dashboard Message"""
-    
+
     level = user.level if user.level else "Unknown"
     access_status = "✅ Active" if user.access == "ACTIVE" else "🔒 Locked"
-    
+
     message = f"""
 🌍 SOCIAL SCIENCE STREAM DASHBOARD
 
-👤 User: {user.first_name} {user.last_name or ''}
+👤 User: {user.name}
 📚 Level: {level.title()}
 🏷️ Stream: Social Science
 🔑 Access: {access_status}

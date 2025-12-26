@@ -1,0 +1,89 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Test script to verify callback data format fixes
+"""
+
+def test_callback_data_parsing():
+    """Test the callback data parsing logic"""
+    print("🔍 Testing callback data parsing...")
+    
+    # Test cases that were failing
+    test_cases = [
+        ("exam_course_maths", "maths"),
+        ("exam_course_bio", "bio"), 
+        ("exam_course_chemistry", "chemistry"),
+        ("exam_course_physics", "physics"),
+        ("exam_course_history", "history"),
+        ("exam_course_english", "english"),
+        ("exam_course_geography", "geography"),
+        ("exam_course_1", "1"),  # legacy numeric format
+    ]
+    
+    all_passed = True
+    
+    for callback_data, expected in test_cases:
+        # Simulate the parsing logic from course_handler.py
+        callback_data_clean = callback_data.replace("exam_course_", "")
+        
+        # Try to parse as integer first (legacy format)
+        try:
+            course_id = int(callback_data_clean)
+            parsed_value = course_id
+            is_numeric = True
+        except ValueError:
+            # Not a number, treat as course code
+            parsed_value = callback_data_clean
+            is_numeric = False
+        
+        if parsed_value == expected:
+            print(f"✅ {callback_data} → {parsed_value} (numeric: {is_numeric})")
+        else:
+            print(f"❌ {callback_data} → {parsed_value}, expected: {expected}")
+            all_passed = False
+    
+    return all_passed
+
+def test_chapter_callback_parsing():
+    """Test chapter callback data parsing"""
+    print("\n🔍 Testing chapter callback data parsing...")
+    
+    # Test cases for start_exam_ patterns
+    test_cases = [
+        ("start_exam_123", "123", True),  # numeric chapter ID
+        ("start_exam_bio", "bio", False), # course code (should show chapters)
+        ("start_exam_maths", "maths", False), # course code
+    ]
+    
+    all_passed = True
+    
+    for callback_data, expected, is_numeric_expected in test_cases:
+        # Simulate the parsing logic from start_exam_selected
+        value = callback_data.replace("start_exam_", "")
+        is_numeric = value.isdigit()
+        
+        if value == expected and is_numeric == is_numeric_expected:
+            print(f"✅ {callback_data} → {value} (numeric: {is_numeric})")
+        else:
+            print(f"❌ {callback_data} → {value} (numeric: {is_numeric}), expected: {expected} (numeric: {is_numeric_expected})")
+            all_passed = False
+    
+    return all_passed
+
+if __name__ == "__main__":
+    print("🧪 TESTING CALLBACK DATA FORMAT FIXES")
+    print("=" * 50)
+    
+    course_test_passed = test_callback_data_parsing()
+    chapter_test_passed = test_chapter_callback_parsing()
+    
+    print("\n" + "=" * 50)
+    if course_test_passed and chapter_test_passed:
+        print("🎉 ALL TESTS PASSED! Callback data format fixes working correctly.")
+    else:
+        print("❌ SOME TESTS FAILED!")
+        if not course_test_passed:
+            print("  - Course callback data parsing failed")
+        if not chapter_test_passed:
+            print("  - Chapter callback data parsing failed")
+    
+    print("=" * 50)</parameter>

@@ -1,0 +1,92 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Fix admin access control - admins should have automatic access without payment
+"""
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
+
+from app.database.session import SessionLocal
+from app.models.user import User
+from app.config.constants import ADMIN_IDS
+
+def grant_admin_access():
+    """Grant automatic access to all admin users"""
+    print("=== GRANTING ADMIN ACCESS ===")
+    
+    db = SessionLocal()
+    
+    try:
+        # Get all admin users
+        admin_users = db.query(User).filter(User.telegram_id.in_(ADMIN_IDS)).all()
+        
+        if not admin_users:
+            print("No admin users found in database. Creating admin users...")
+            
+            # Create admin users for each admin ID
+            for admin_id in ADMIN_IDS:
+                admin_user = User(
+                    telegram_id=admin_id,
+                    name=f"Admin {admin_id}",
+                    email=f"admin{admin_id}@example.com",
+                    stream="administration",
+                    level="admin",
+                    access="UNLOCKED"  # Admins get automatic access
+                )
+                db.add(admin_user)
+                print(f"Created admin user: ID {admin_id}")
+        else:
+            print(f"Found {len(admin_users)} admin users:")
+            
+            # Grant access to all admin users
+            for user in admin_users:
+                old_access = user.access
+                user.access = "UNLOCKED"  # Admins always have access
+                db.add(user)
+                print(f"  User: {user.name} (ID: {user.telegram_id})")
+                print(f"    Access: {old_access} → UNLOCKED")
+        
+        db.commit()
+        print("\n✅ All admin users now have automatic access!")
+        
+    except Exception as e:
+        print(f"Error granting admin access: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+def check_admin_status():
+    """Check current status of admin users"""
+    print("=== CHECKING ADMIN STATUS ===")
+    
+    db = SessionLocal()
+    
+    try:
+        # Check all users
+        all_users = db.query(User).all()
+        print(f"Total users in database: {len(all_users)}")
+        
+        print("\nAdmin users:")
+        for user in all_users:
+            if user.telegram_id in ADMIN_IDS:
+                status = "✅ UNLOCKED" if user.access == "UNLOCKED" else "❌ LOCKED"
+                print(f"  {user.name} (ID: {user.telegram_id}): {status}")
+        
+        print("\nRegular users:")
+        for user in all_users:
+            if user.telegram_id not in ADMIN_IDS:
+                status = "✅ UNLOCKED" if user.access == "UNLOCKED" else "❌ LOCKED"
+                print(f"  {user.name} (ID: {user.telegram_id}): {status}")
+                
+    except Exception as e:
+        print(f"Error checking admin status: {e}")
+    finally:
+        db.close()
+
+if __name__ == "__main__":
+    check_admin_status()
+    print("\n" + "="*50)
+    grant_admin_access()
+    print("\n" + "="*50)
+    check_admin_status()</parameter>

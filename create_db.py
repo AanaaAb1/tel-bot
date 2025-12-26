@@ -9,6 +9,7 @@ from app.database.session import engine
 from app.models.user import User
 from app.models.payment import Payment
 from app.models.course import Course
+from app.models.chapter import Chapter
 from app.models.exam import Exam
 from app.models.question import Question
 from app.models.answer import Answer

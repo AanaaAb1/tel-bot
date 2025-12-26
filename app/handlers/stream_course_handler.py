@@ -1,6 +1,6 @@
 """
 Stream-Specific Course Selection Handlers
-Handle course selection for Natural Science and Social Science streams
+Handle course selection for Natural Science and Social Science streams - ALL COURSES AVAILABLE TO BOTH STREAMS
 """
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
@@ -17,7 +17,7 @@ def get_stream_course_handler():
     return CallbackQueryHandler(handle_stream_course_selection, pattern="^select_(ns|ss)_course$")
 
 async def select_natural_science_course(update, context):
-    """Display Natural Science stream course selection"""
+    """Display Natural Science stream course selection - ALL COURSES AVAILABLE"""
     query = update.callback_query
     await query.answer()
 
@@ -25,31 +25,40 @@ async def select_natural_science_course(update, context):
 
     # Check if user is admin (admins can access all courses)
     if user_id in ADMIN_IDS:
-        # Show all Natural Science courses to admin users
+        # Show all courses to admin users
         courses = [
             ("📐 Mathematics", "maths"),
             ("📝 English", "english"),
             ("🧬 Biology", "bio"),
             ("⚛️ Physics", "physics"),
-            ("⚗️ Chemistry", "chemistry")
+            ("⚗️ Chemistry", "chemistry"),
+            ("📜 History", "history"),
+            ("🌍 Geography", "geography"),
+            ("🏛️ Government", "government"),
+            ("💰 Economics", "economics"),
+            ("📚 Literature", "literature")
         ]
         message = """
-👑 Admin View: Natural Science Stream Courses
+👑 Admin View: Natural Science Stream - ALL COURSES AVAILABLE
 
-🎓 All Available Courses for Natural Science Stream:
+🎓 Complete Course Library for Natural Science Students:
 
-• Mathematics, English
-• Biology, Physics, Chemistry
+Natural Science Subjects:
+• Mathematics, English, Biology, Physics, Chemistry
 
-Select a course to start your exam:
+Social Science Subjects:
+• History, Geography, Government, Economics, Literature
+
+All courses are now available to Natural Science stream students!
+Select a course and chapter to start your exam:
         """
         
-        # Create keyboard
+        # Create keyboard - now shows chapter selection
         keyboard = []
         for course_name, course_code in courses:
             keyboard.append([InlineKeyboardButton(
                 course_name,
-                callback_data=f"start_exam_{course_code}"
+                callback_data=f"select_chapter_{course_code}"
             )])
         
         keyboard.append([InlineKeyboardButton("↩️ Back to Dashboard", callback_data="natural_science_dashboard")])
@@ -87,72 +96,40 @@ Select a course to start your exam:
         )
         return
 
-    # Define Natural Science courses based on user level
-    if user.level and user.level.lower() == "remedial":
-        # Remedial Natural Science students get basic science courses
-        courses = [
-            ("📐 Mathematics", "maths"),
-            ("📝 English", "english"),
-            ("🧬 Biology", "bio"),
-            ("⚛️ Physics", "physics"),
-            ("⚗️ Chemistry", "chemistry")
-        ]
-        message = """
-🧬 Natural Science Stream - Remedial Level
+    # ALL courses available for Natural Science stream (no level restrictions)
+    courses = [
+        ("📐 Mathematics", "maths"),
+        ("📝 English", "english"),
+        ("🧬 Biology", "bio"),
+        ("⚛️ Physics", "physics"),
+        ("⚗️ Chemistry", "chemistry"),
+        ("📜 History", "history"),
+        ("🌍 Geography", "geography"),
+        ("🏛️ Government", "government"),
+        ("💰 Economics", "economics"),
+        ("📚 Literature", "literature")
+    ]
+    message = """
+🧬 Natural Science Stream - ALL COURSES AVAILABLE
 
-🔰 Available Courses for Remedial Students:
+🎓 Complete Course Library for Natural Science Students:
 
-Common Subjects:
-• Mathematics, English
+Natural Science Subjects:
+• Mathematics, English, Biology, Physics, Chemistry
 
-Science Subjects:
-• Biology, Physics, Chemistry
+Social Science Subjects:
+• History, Geography, Government, Economics, Literature
 
+All courses are now available to Natural Science stream students!
 Select a course to start your exam:
-        """
-    elif user.level and user.level.lower() == "freshman":
-        # Freshman Natural Science students get all available courses
-        courses = [
-            ("📐 Mathematics", "maths"),
-            ("📝 English", "english"),
-            ("🧬 Biology", "bio"),
-            ("⚛️ Physics", "physics"),
-            ("⚗️ Chemistry", "chemistry")
-        ]
-        message = """
-🧬 Natural Science Stream - Freshman Level
+    """
 
-🎓 Available Courses for Freshman Students:
-
-All Natural Science Subjects:
-• Mathematics, English
-• Biology, Physics, Chemistry
-
-Select a course to start your exam:
-        """
-    else:
-        # Default to basic courses
-        courses = [
-            ("📐 Mathematics", "maths"),
-            ("📝 English", "english")
-        ]
-        message = """
-🧬 Natural Science Stream Courses
-
-📚 Available Courses:
-
-Basic Subjects:
-• Mathematics, English
-
-Select a course to start your exam:
-        """
-
-    # Create keyboard
+    # Create keyboard - now shows chapter selection
     keyboard = []
     for course_name, course_code in courses:
         keyboard.append([InlineKeyboardButton(
             course_name,
-            callback_data=f"start_exam_{course_code}"
+            callback_data=f"select_chapter_{course_code}"
         )])
     
     keyboard.append([InlineKeyboardButton("↩️ Back to Dashboard", callback_data="natural_science_dashboard")])
@@ -165,7 +142,7 @@ Select a course to start your exam:
     )
 
 async def select_social_science_course(update, context):
-    """Display Social Science stream course selection"""
+    """Display Social Science stream course selection - ALL COURSES AVAILABLE"""
     query = update.callback_query
     await query.answer()
 
@@ -173,10 +150,13 @@ async def select_social_science_course(update, context):
 
     # Check if user is admin (admins can access all courses)
     if user_id in ADMIN_IDS:
-        # Show all Social Science courses to admin users
+        # Show all courses to admin users
         courses = [
             ("📐 Mathematics", "maths"),
             ("📝 English", "english"),
+            ("🧬 Biology", "bio"),
+            ("⚛️ Physics", "physics"),
+            ("⚗️ Chemistry", "chemistry"),
             ("📜 History", "history"),
             ("🌍 Geography", "geography"),
             ("🏛️ Government", "government"),
@@ -184,23 +164,26 @@ async def select_social_science_course(update, context):
             ("📚 Literature", "literature")
         ]
         message = """
-👑 Admin View: Social Science Stream Courses
+👑 Admin View: Social Science Stream - ALL COURSES AVAILABLE
 
-🎓 All Available Courses for Social Science Stream:
+🎓 Complete Course Library for Social Science Students:
 
-• Mathematics, English
-• History, Geography, Government
-• Economics, Literature
+Natural Science Subjects:
+• Mathematics, English, Biology, Physics, Chemistry
 
-Select a course to start your exam:
+Social Science Subjects:
+• History, Geography, Government, Economics, Literature
+
+All courses are now available to Social Science stream students!
+Select a course and chapter to start your exam:
         """
         
-        # Create keyboard
+        # Create keyboard - now shows chapter selection
         keyboard = []
         for course_name, course_code in courses:
             keyboard.append([InlineKeyboardButton(
                 course_name,
-                callback_data=f"start_exam_{course_code}"
+                callback_data=f"select_chapter_{course_code}"
             )])
         
         keyboard.append([InlineKeyboardButton("↩️ Back to Dashboard", callback_data="social_science_dashboard")])
@@ -238,74 +221,40 @@ Select a course to start your exam:
         )
         return
 
-    # Define Social Science courses based on user level
-    if user.level and user.level.lower() == "remedial":
-        # Remedial Social Science students get basic social studies courses
-        courses = [
-            ("📐 Mathematics", "maths"),
-            ("📝 English", "english"),
-            ("📜 History", "history"),
-            ("🌍 Geography", "geography")
-        ]
-        message = """
-🌍 Social Science Stream - Remedial Level
+    # ALL courses available for Social Science stream (no level restrictions)
+    courses = [
+        ("📐 Mathematics", "maths"),
+        ("📝 English", "english"),
+        ("🧬 Biology", "bio"),
+        ("⚛️ Physics", "physics"),
+        ("⚗️ Chemistry", "chemistry"),
+        ("📜 History", "history"),
+        ("🌍 Geography", "geography"),
+        ("🏛️ Government", "government"),
+        ("💰 Economics", "economics"),
+        ("📚 Literature", "literature")
+    ]
+    message = """
+🌍 Social Science Stream - ALL COURSES AVAILABLE
 
-🔰 Available Courses for Remedial Students:
+🎓 Complete Course Library for Social Science Students:
 
-Common Subjects:
-• Mathematics, English
+Natural Science Subjects:
+• Mathematics, English, Biology, Physics, Chemistry
 
-Social Studies:
-• History, Geography
+Social Science Subjects:
+• History, Geography, Government, Economics, Literature
 
+All courses are now available to Social Science stream students!
 Select a course to start your exam:
-        """
-    elif user.level and user.level.lower() == "freshman":
-        # Freshman Social Science students get all available courses
-        courses = [
-            ("📐 Mathematics", "maths"),
-            ("📝 English", "english"),
-            ("📜 History", "history"),
-            ("🌍 Geography", "geography"),
-            ("🏛️ Government", "government"),
-            ("💰 Economics", "economics"),
-            ("📚 Literature", "literature")
-        ]
-        message = """
-🌍 Social Science Stream - Freshman Level
+    """
 
-🎓 Available Courses for Freshman Students:
-
-All Social Science Subjects:
-• Mathematics, English
-• History, Geography, Government
-• Economics, Literature
-
-Select a course to start your exam:
-        """
-    else:
-        # Default to basic courses
-        courses = [
-            ("📐 Mathematics", "maths"),
-            ("📝 English", "english")
-        ]
-        message = """
-🌍 Social Science Stream Courses
-
-📚 Available Courses:
-
-Basic Subjects:
-• Mathematics, English
-
-Select a course to start your exam:
-        """
-
-    # Create keyboard
+    # Create keyboard - now shows chapter selection
     keyboard = []
     for course_name, course_code in courses:
         keyboard.append([InlineKeyboardButton(
             course_name,
-            callback_data=f"start_exam_{course_code}"
+            callback_data=f"select_chapter_{course_code}"
         )])
     
     keyboard.append([InlineKeyboardButton("↩️ Back to Dashboard", callback_data="social_science_dashboard")])
@@ -318,7 +267,7 @@ Select a course to start your exam:
     )
 
 async def handle_stream_course_selection(update, context):
-    """Handle stream-specific course exam start"""
+    """Handle stream-specific course exam start - NO STREAM RESTRICTIONS"""
     query = update.callback_query
     await query.answer()
 
@@ -334,16 +283,127 @@ async def handle_stream_course_selection(update, context):
         await query.edit_message_text("❌ User information not found. Please register again.")
         return
 
-    # Verify user has appropriate stream access for the course
-    natural_science_courses = ["maths", "english", "bio", "physics", "chemistry"]
-    social_science_courses = ["maths", "english", "history", "geography", "government", "economics", "literature"]
-
-    if user.stream == "natural_science" and course_code not in natural_science_courses:
-        await query.edit_message_text("❌ Access denied. This course is not available in your Natural Science stream.")
-        return
-    elif user.stream == "social_science" and course_code not in social_science_courses:
-        await query.edit_message_text("❌ Access denied. This course is not available in your Social Science stream.")
-        return
-
+    # NO STREAM RESTRICTIONS - ALL COURSES AVAILABLE TO ALL STREAMS
+    # Both Natural Science and Social Science students can access all courses
+    
     # Start the exam
     await start_exam_selected(update, context)
+
+async def handle_chapter_selection(update, context):
+    """Handle chapter selection for courses"""
+    query = update.callback_query
+    await query.answer()
+
+    course_code = query.data.replace("select_chapter_", "")
+    
+    # Course name mapping for display
+    course_names = {
+        "bio": "Biology",
+        "physics": "Physics",
+        "chemistry": "Chemistry", 
+        "english": "English",
+        "maths": "Mathematics",
+        "geography": "Geography",
+        "history": "History",
+        "government": "Government",
+        "economics": "Economics",
+        "literature": "Literature"
+    }
+    
+    course_name = course_names.get(course_code, course_code.title())
+    
+    # Check if this course exists in database
+    from app.services.course_service import get_courses_by_code
+    courses = get_courses_by_code(course_code)
+    
+    if not courses:
+        # Course doesn't exist in database - show error message
+        missing_courses = ['geography', 'history', 'government', 'economics', 'literature']
+        if course_code.lower() in missing_courses:
+            await query.edit_message_text(
+                f"⚠️ Course Unavailable\n\n"
+                f"The course '{course_name}' is not available in our exam system yet.\n\n"
+                f"📚 Currently Available Courses:\n"
+                f"• Mathematics\n"
+                f"• Physics\n" 
+                f"• Chemistry\n"
+                f"• Biology\n"
+                f"• English\n\n"
+                f"Please select from the available courses above.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("↩️ Back to Natural Science", callback_data="select_ns_course")],
+                    [InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_main")]
+                ])
+            )
+        else:
+            await query.edit_message_text(
+                "Course not found.\n\nPlease try selecting from the available courses.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("↩️ Back to Natural Science", callback_data="select_ns_course")],
+                    [InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_main")]
+                ])
+            )
+        return
+    
+    # Show chapter selection
+    try:
+        from app.keyboards.chapter_selection_keyboard import get_chapter_selection_keyboard, get_chapter_selection_message
+        
+        keyboard = get_chapter_selection_keyboard(course_name, course_code)
+        message = get_chapter_selection_message(course_name, course_code)
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=keyboard,
+            parse_mode='Markdown'
+        )
+    except ImportError:
+        # Chapter selection keyboard doesn't exist, show simple message
+        await query.edit_message_text(
+            f"📚 {course_name} Course Selected\n\n"
+            f"This course is available for exams. Chapters will be added soon!\n\n"
+            f"Please check back later for chapter selection.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("↩️ Back to Natural Science", callback_data="select_ns_course")],
+                [InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_main")]
+            ])
+        )
+
+async def handle_chapter_exam_start(update, context):
+    """Handle exam start with chapter specification"""
+    query = update.callback_query
+    await query.answer()
+
+    # Parse chapter exam callback data
+    # Format: start_chapter_exam_{course_code}_{chapter}
+    data_parts = query.data.split("_")
+    if len(data_parts) >= 4:
+        course_code = data_parts[3]  # start_chapter_exam_coursecode_chapter
+        chapter = data_parts[4]
+        
+        # Store chapter info in context
+        context.user_data['chapter'] = chapter
+        
+        # Start the exam with chapter context
+        await start_exam_selected(update, context)
+    else:
+        await query.edit_message_text("❌ Invalid chapter selection. Please try again.")
+
+def register_stream_course_handlers(application):
+    """Register stream-specific course handlers"""
+    application.add_handler(CallbackQueryHandler(
+        select_natural_science_course, 
+        pattern="^select_ns_course$"
+    ))
+    application.add_handler(CallbackQueryHandler(
+        select_social_science_course, 
+        pattern="^select_ss_course$"
+    ))
+    application.add_handler(CallbackQueryHandler(
+        handle_chapter_selection, 
+        pattern="^select_chapter_"
+    ))
+    application.add_handler(CallbackQueryHandler(
+        handle_chapter_exam_start, 
+        pattern="^start_chapter_exam_"
+    ))

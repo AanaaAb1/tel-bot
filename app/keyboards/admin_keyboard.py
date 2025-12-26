@@ -16,10 +16,10 @@ def get_admin_main_menu():
     return InlineKeyboardMarkup(keyboard)
 
 def get_admin_questions_menu():
-    """Questions management menu - 2-column layout"""
+    """Enhanced Questions management menu with course selection - 2-column layout"""
     keyboard = [
-        # Row 1: Add Question + Edit Question
-        [InlineKeyboardButton("➕ Add Question", callback_data="admin_add_question"),
+        # Row 1: Add Question + Edit Question (Enhanced)
+        [InlineKeyboardButton("➕ Add Question", callback_data="admin_select_course"),
          InlineKeyboardButton("✏️ Edit Question", callback_data="admin_edit_question")],
         # Row 2: Delete Question + Back to Main
         [InlineKeyboardButton("🗑️ Delete Question", callback_data="admin_delete_question"),

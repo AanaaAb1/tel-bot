@@ -1,0 +1,63 @@
+/home/aneman/Desktop/Exambot/telegramexambot/comprehensive_diagnostic.py:32: DeprecationWarning: The '__version__' attribute is deprecated and will be removed in Flask 3.2. Use feature detection or 'importlib.metadata.version("flask")' instead.
+  results[module_name] = f"✅ {description} - Version: {flask.__version__}"
+🔍 COMPREHENSIVE SYSTEM DIAGNOSTIC
+============================================================
+============================================================
+IMPORT TESTING
+============================================================
+✅ Flask web framework - Version: 3.1.2
+✅ Flask-Login extension - Version: 0.6.3
+✅ Werkzeug security utilities
+✅ SQLAlchemy ORM - Version: 2.0.45
+✅ DateTime utilities
+✅ JSON utilities
+
+============================================================
+DATABASE IMPORT TESTING
+============================================================
+✅ SessionLocal - Import successful
+✅ Base - Import successful
+✅ User - Import successful
+✅ Course - Import successful
+✅ Chapter - Import successful
+✅ Question - Import successful
+✅ Payment - Import successful
+
+============================================================
+DATABASE CONNECTION TESTING
+============================================================
+✅ Database tables created successfully
+✅ Database session created successfully
+✅ Database query successful - User count: 1
+
+============================================================
+TEMPLATE FILES TESTING
+============================================================
+✅ templates/base.html - Exists
+✅ templates/admin/login.html - Exists
+✅ templates/admin/dashboard.html - Exists
+✅ templates/admin/courses.html - Exists
+✅ templates/admin/course_form.html - Exists
+✅ templates/admin/chapters.html - Exists
+✅ templates/admin/chapter_form.html - Exists
+✅ templates/admin/questions.html - Exists
+✅ templates/admin/question_form.html - Exists
+✅ templates/admin/users.html - Exists
+✅ templates/admin/payments.html - Exists
+
+============================================================
+FLASK APP CREATION TESTING
+============================================================
+✅ Flask app created successfully
+✅ Flask-Login initialized successfully
+
+============================================================
+DIAGNOSTIC SUMMARY
+============================================================
+📦 Import Tests: 6/6 passed
+🗄️ Database Import Tests: 7/7 passed
+🔗 Database Connection: ✅ Passed
+🎨 Template Tests: 11/11 passed
+🌐 Flask App Creation: ✅ Passed
+
+🚀 Admin Panel Status: ✅ CAN RUN

@@ -17,9 +17,9 @@ async def answer_question(update, context):
 
     # Handle true/false questions
     if is_true_false_question(question):
-        is_correct = selected == question.correct_option
+        is_correct = selected == question.correct_answer
     else:
-        is_correct = selected == question.correct_option
+        is_correct = selected == question.correct_answer
 
     # Cancel any existing timer for this question to prevent conflicts
     if "current_timer" in data and data["current_timer"]:

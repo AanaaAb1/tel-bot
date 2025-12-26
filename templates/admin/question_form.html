@@ -1,0 +1,531 @@
+
+{% extends "base.html" %}
+
+{% block title %}{% if question %}Edit Question{% else %}Add Question{% endif %} - SmartTest Admin Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .form-header {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .form-header h2 {
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+    
+    .course-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+    
+    .course-info h5 {
+        margin: 0 0 5px 0;
+        font-weight: 600;
+    }
+    
+    .course-info p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 20px;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .form-text {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    .option-group {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .option-group:hover {
+        border-color: #667eea;
+    }
+    
+    .option-group.correct {
+        background: #d4edda;
+        border-color: #28a745;
+    }
+    
+    .option-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .correct-indicator {
+        background: #28a745;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    .btn-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .btn {
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+        min-width: 150px;
+    }
+    
+    .btn-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        color: white;
+    }
+    
+    .question-preview {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .question-preview h6 {
+        margin: 0 0 15px 0;
+        color: #495057;
+        font-weight: 600;
+    }
+    
+    .preview-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .preview-option {
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+        font-size: 0.9rem;
+    }
+    
+    .preview-option.correct {
+        background: #d4edda;
+        border-color: #28a745;
+        color: #155724;
+    }
+    
+    .correct-answer-section {
+        background: #fff3cd;
+        border: 2px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    
+    .correct-answer-section h6 {
+        margin: 0 0 10px 0;
+        color: #856404;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card">
+        <div class="form-header">
+            <h2>
+                <i class="fas fa-question-circle me-2 text-primary"></i>
+                {% if question %}Edit Question{% else %}Add New Question{% endif %}
+            </h2>
+            <p>
+                {% if question %}
+                    Update the question information below
+                {% else %}
+                    Create a new question for {{ chapter.name }}
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="course-info">
+            <h5>
+                <i class="fas fa-book me-2"></i>
+                {{ course.name }} - {{ chapter.name }}
+            </h5>
+            <p>
+                <i class="fas fa-tag me-1"></i>
+                {{ course.code }}
+            </p>
+        </div>
+        
+        <form method="POST" novalidate id="questionForm">
+            <div class="form-floating">
+                <label for="question_text" class="form-label">
+                    <i class="fas fa-question me-1"></i>
+                    Question Text *
+                </label>
+                <textarea class="form-control" 
+                          id="question_text" 
+                          name="question_text" 
+                          rows="3"
+                          placeholder="Enter your question here..."
+                          required>{{ question.question_text if question else '' }}</textarea>
+                <div class="form-text">
+                    Clear, concise question that students can understand
+                </div>
+            </div>
+            
+            <div class="form-floating">
+                <label for="difficulty" class="form-label">
+                    <i class="fas fa-signal me-1"></i>
+                    Difficulty Level *
+                </label>
+                <select class="form-select" id="difficulty" name="difficulty" required>
+                    <option value="">Select difficulty</option>
+                    <option value="Easy" {% if question and question.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                    <option value="Intermediate" {% if question and question.difficulty == 'Intermediate' %}selected{% endif %}>Intermediate</option>
+                    <option value="Advanced" {% if question and question.difficulty == 'Advanced' %}selected{% endif %}>Advanced</option>
+                </select>
+                <div class="form-text">
+                    Choose the appropriate difficulty level for this question
+                </div>
+            </div>
+            
+            <h5 class="mb-3">
+                <i class="fas fa-list me-2 text-primary"></i>
+                Answer Options
+            </h5>
+            
+            <div class="option-group" id="optionAGroup">
+                <div class="option-label">
+                    <span class="badge bg-primary">A</span>
+                    Option A
+                    <span class="correct-indicator" id="correctA" style="display: none;">
+                        <i class="fas fa-check me-1"></i>Correct
+                    </span>
+                </div>
+                <textarea class="form-control" 
+                          id="option_a" 
+                          name="option_a" 
+                          rows="2"
+                          placeholder="Enter option A..."
+                          required>{{ question.option_a if question else '' }}</textarea>
+            </div>
+            
+            <div class="option-group" id="optionBGroup">
+                <div class="option-label">
+                    <span class="badge bg-primary">B</span>
+                    Option B
+                    <span class="correct-indicator" id="correctB" style="display: none;">
+                        <i class="fas fa-check me-1"></i>Correct
+                    </span>
+                </div>
+                <textarea class="form-control" 
+                          id="option_b" 
+                          name="option_b" 
+                          rows="2"
+                          placeholder="Enter option B..."
+                          required>{{ question.option_b if question else '' }}</textarea>
+            </div>
+            
+            <div class="option-group" id="optionCGroup">
+                <div class="option-label">
+                    <span class="badge bg-primary">C</span>
+                    Option C
+                    <span class="correct-indicator" id="correctC" style="display: none;">
+                        <i class="fas fa-check me-1"></i>Correct
+                    </span>
+                </div>
+                <textarea class="form-control" 
+                          id="option_c" 
+                          name="option_c" 
+                          rows="2"
+                          placeholder="Enter option C..."
+                          required>{{ question.option_c if question else '' }}</textarea>
+            </div>
+            
+            <div class="option-group" id="optionDGroup">
+                <div class="option-label">
+                    <span class="badge bg-primary">D</span>
+                    Option D
+                    <span class="correct-indicator" id="correctD" style="display: none;">
+                        <i class="fas fa-check me-1"></i>Correct
+                    </span>
+                </div>
+                <textarea class="form-control" 
+                          id="option_d" 
+                          name="option_d" 
+                          rows="2"
+                          placeholder="Enter option D..."
+                          required>{{ question.option_d if question else '' }}</textarea>
+            </div>
+            
+            <div class="correct-answer-section">
+                <h6>
+                    <i class="fas fa-check-circle me-1"></i>
+                    Correct Answer
+                </h6>
+                <div class="form-floating">
+                    <select class="form-select" id="correct_answer" name="correct_answer" required>
+                        <option value="">Select the correct answer</option>
+                        <option value="A" {% if question and question.correct_answer == 'A' %}selected{% endif %}>Option A</option>
+                        <option value="B" {% if question and question.correct_answer == 'B' %}selected{% endif %}>Option B</option>
+                        <option value="C" {% if question and question.correct_answer == 'C' %}selected{% endif %}>Option C</option>
+                        <option value="D" {% if question and question.correct_answer == 'D' %}selected{% endif %}>Option D</option>
+                    </select>
+                    <div class="form-text">
+                        Select which option is the correct answer
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-floating">
+                <label for="explanation" class="form-label">
+                    <i class="fas fa-lightbulb me-1"></i>
+                    Explanation (Optional)
+                </label>
+                <textarea class="form-control" 
+                          id="explanation" 
+                          name="explanation" 
+                          rows="3"
+                          placeholder="Explain why this answer is correct...">{{ question.explanation if question else '' }}</textarea>
+                <div class="form-text">
+                    Provide an explanation to help students understand the correct answer
+                </div>
+            </div>
+            
+            <!-- Question Preview -->
+            <div class="question-preview" id="questionPreview" style="display: none;">
+                <h6>
+                    <i class="fas fa-eye me-1"></i>
+                    Question Preview
+                </h6>
+                <div id="previewQuestion"></div>
+                <div class="preview-options" id="previewOptions"></div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-signal me-1"></i>
+                        Difficulty: <span id="previewDifficulty"></span>
+                    </small>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button type="submit" class="btn btn-gradient" id="submitBtn">
+                    <i class="fas fa-save me-2"></i>
+                    {% if question %}Update Question{% else %}Create Question{% endif %}
+                </button>
+                
+                <a href="{{ url_for('questions', chapter_id=chapter.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    Cancel
+                </a>
+                
+                <button type="button" class="btn btn-info" id="previewBtn">
+                    <i class="fas fa-eye me-2"></i>
+                    Preview
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Question Guidelines -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                Question Creation Guidelines
+            </h5>
+            <ul class="card-text">
+                <li><strong>Question Text:</strong> Be clear and specific. Avoid ambiguous wording</li>
+                <li><strong>Options:</strong> Make all options plausible but ensure only one is clearly correct</li>
+                <li><strong>Difficulty:</strong> Easy (basic recall), Intermediate (application), Advanced (analysis/synthesis)</li>
+                <li><strong>Explanation:</strong> Helps students learn from mistakes and understand concepts</li>
+                <li><strong>Content:</strong> Align with chapter learning objectives</li>
+                <li><strong>Language:</strong> Use appropriate level for target audience</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('questionForm');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewSection = document.getElementById('questionPreview');
+    const submitBtn = document.getElementById('submitBtn');
+    const correctAnswerSelect = document.getElementById('correct_answer');
+    
+    // Update correct answer indicators
+    function updateCorrectIndicators() {
+        const selectedAnswer = correctAnswerSelect.value;
+        
+        // Hide all indicators
+        ['A', 'B', 'C', 'D'].forEach(letter => {
+            document.getElementById('correct' + letter).style.display = 'none';
+            document.getElementById('option' + letter + 'Group').classList.remove('correct');
+        });
+        
+        // Show selected indicator
+        if (selectedAnswer) {
+            document.getElementById('correct' + selectedAnswer).style.display = 'inline-block';
+            document.getElementById('option' + selectedAnswer + 'Group').classList.add('correct');
+        }
+    }
+    
+    correctAnswerSelect.addEventListener('change', updateCorrectIndicators);
+    updateCorrectIndicators(); // Initialize
+    
+    // Preview functionality
+    previewBtn.addEventListener('click', function() {
+        const questionText = document.getElementById('question_text').value.trim();
+        const optionA = document.getElementById('option_a').value.trim();
+        const optionB = document.getElementById('option_b').value.trim();
+        const optionC = document.getElementById('option_c').value.trim();
+        const optionD = document.getElementById('option_d').value.trim();
+        const correctAnswer = document.getElementById('correct_answer').value;
+        const difficulty = document.getElementById('difficulty').value;
+        
+        if (!questionText || !optionA || !optionB || !optionC || !optionD || !correctAnswer) {
+            alert('Please fill in all required fields to preview the question');
+            return;
+        }
+        
+        // Update preview content
+        document.getElementById('previewQuestion').innerHTML = '<strong>' + questionText + '</strong>';
+        
+        const optionsHtml = `
+            <div class="preview-option ${correctAnswer === 'A' ? 'correct' : ''}">
+                <strong>A.</strong> ${optionA}
+            </div>
+            <div class="preview-option ${correctAnswer === 'B' ? 'correct' : ''}">
+                <strong>B.</strong> ${optionB}
+            </div>
+            <div class="preview-option ${correctAnswer === 'C' ? 'correct' : ''}">
+                <strong>C.</strong> ${optionC}
+            </div>
+            <div class="preview-option ${correctAnswer === 'D' ? 'correct' : ''}">
+                <strong>D.</strong> ${optionD}
+            </div>
+        `;
+        
+        document.getElementById('previewOptions').innerHTML = optionsHtml;
+        document.getElementById('previewDifficulty').textContent = difficulty || 'Not selected';
+        
+        // Show/hide preview
+        if (previewSection.style.display === 'none') {
+            previewSection.style.display = 'block';
+            previewBtn.innerHTML = '<i class="fas fa-eye-slash me-2"></i>Hide Preview';
+        } else {
+            previewSection.style.display = 'none';
+            previewBtn.innerHTML = '<i class="fas fa-eye me-2"></i>Preview';
+        }
+    });
+    
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const questionText = document.getElementById('question_text').value.trim();
+        const optionA = document.getElementById('option_a').value.trim();
+        const optionB = document.getElementById('option_b').value.trim();
+        const optionC = document.getElementById('option_c').value.trim();
+        const optionD = document.getElementById('option_d').value.trim();
+        const correctAnswer = document.getElementById('correct_answer').value;
+        const difficulty = document.getElementById('difficulty').value;
+        
+        if (!questionText || !optionA || !optionB || !optionC || !optionD || !correctAnswer || !difficulty) {
+            e.preventDefault();
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.innerHTML = '<span class="loading"></span> Processing...';
+        submitBtn.disabled = true;
+    });
+    
+    // Auto-hide success messages
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert-success');
+        alerts.forEach(alert => {
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 300);
+        });
+    }, 3000);
+});
+</script>
+{% endblock %}
+

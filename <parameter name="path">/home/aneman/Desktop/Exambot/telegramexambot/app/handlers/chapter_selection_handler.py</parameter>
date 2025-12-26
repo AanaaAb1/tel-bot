@@ -1,0 +1,167 @@
+
+<parameter name="content">from telegram import Update, InlineKeyboardMarkup
+from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler
+from app.keyboards.chapter_selection_keyboard import get_chapter_selection_keyboard, get_chapter_exam_keyboard
+from app.services.chapter_service import ChapterService
+from app.database.session import SessionLocal
+import logging
+
+logger = logging.getLogger(__name__)
+
+class ChapterSelectionHandler:
+    """Handler for chapter selection functionality"""
+    
+    def __init__(self):
+        self.callback_patterns = [
+            r"chapters_(.*)",  # Show chapters for a course
+            r"select_chapter_(.*)",  # Select a specific chapter
+            r"start_chapter_exam_(.*)",  # Start chapter exam
+            r"start_quick_quiz_(.*)",  # Start quick quiz
+            r"start_full_exam_(.*)",  # Start full exam
+        ]
+    
+    async def handle_chapters_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle chapter selection callbacks"""
+        query = update.callback_query
+        await query.answer()
+        
+        callback_data = query.data
+        db = SessionLocal()
+        
+        try:
+            if callback_data.startswith("chapters_"):
+                # Show chapters for a course
+                course_id = int(callback_data.split("_")[1])
+                await self.show_chapters(update, context, course_id)
+                
+            elif callback_data.startswith("select_chapter_"):
+                # Select a specific chapter
+                chapter_id = int(callback_data.split("_")[2])
+                await self.show_chapter_exam_options(update, context, chapter_id)
+                
+            elif callback_data.startswith("start_chapter_exam_"):
+                # Start chapter exam
+                chapter_id = int(callback_data.split("_")[3])
+                await self.start_chapter_exam(update, context, chapter_id)
+                
+            elif callback_data.startswith("start_quick_quiz_"):
+                # Start quick quiz
+                chapter_id = int(callback_data.split("_")[3])
+                await self.start_quick_quiz(update, context, chapter_id)
+                
+            elif callback_data.startswith("start_full_exam_"):
+                # Start full exam
+                chapter_id = int(callback_data.split("_")[3])
+                await self.start_full_exam(update, context, chapter_id)
+                
+        except Exception as e:
+            logger.error(f"Error in chapter selection handler: {e}")
+            await query.edit_message_text(
+                "❌ An error occurred. Please try again.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⬅️ Back to Courses", callback_data="courses")]
+                ])
+            )
+        finally:
+            db.close()
+    
+    async def show_chapters(self, update: Update, context: ContextTypes.DEFAULT_TYPE, course_id: int):
+        """Show chapters for a course"""
+        query = update.callback_query
+        
+        chapter_service = ChapterService(SessionLocal())
+        chapters = chapter_service.get_chapters_by_course(course_id)
+        
+        if not chapters:
+            await query.edit_message_text(
+                "📚 No chapters available for this course yet.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⬅️ Back to Courses", callback_data="courses")]
+                ])
+            )
+            return
+        
+        # Get course name
+        from app.models.course import Course
+        db = SessionLocal()
+        course = db.query(Course).filter(Course.id == course_id).first()
+        course_name = course.name if course else "Course"
+        db.close()
+        
+        message_text = f"📚 *{course_name}*\n\nSelect a chapter to practice:"
+        
+        await query.edit_message_text(
+            message_text,
+            reply_markup=get_chapter_selection_keyboard(course_id),
+            parse_mode="Markdown"
+        )
+    
+    async def show_chapter_exam_options(self, update: Update, context: ContextTypes.DEFAULT_TYPE, chapter_id: int):
+        """Show exam options for a chapter"""
+        query = update.callback_query
+        
+        # Get chapter info
+        chapter_service = ChapterService(SessionLocal())
+        chapter = chapter_service.get_chapter_by_id(chapter_id)
+        
+        if not chapter:
+            await query.edit_message_text(
+                "❌ Chapter not found.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⬅️ Back to Courses", callback_data="courses")]
+                ])
+            )
+            return
+        
+        message_text = f"📖 *{chapter.name}*\n\nChoose your practice mode:"
+        
+        await query.edit_message_text(
+            message_text,
+            reply_markup=get_chapter_exam_keyboard(chapter_id),
+            parse_mode="Markdown"
+        )
+    
+    async def start_chapter_exam(self, update: Update, context: ContextTypes.DEFAULT_TYPE, chapter_id: int):
+        """Start a practice exam for the chapter"""
+        query = update.callback_query
+        
+        # TODO: Implement exam generation logic
+        await query.edit_message_text(
+            "🎯 Starting practice exam for this chapter...\n\n(This feature will be implemented soon!)",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬅️ Back to Chapter", callback_data=f"select_chapter_{chapter_id}")]
+            ])
+        )
+    
+    async def start_quick_quiz(self, update: Update, context: ContextTypes.DEFAULT_TYPE, chapter_id: int):
+        """Start a quick 10-question quiz"""
+        query = update.callback_query
+        
+        # TODO: Implement quick quiz logic
+        await query.edit_message_text(
+            "⚡ Starting quick quiz (10 questions)...\n\n(This feature will be implemented soon!)",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬅️ Back to Chapter", callback_data=f"select_chapter_{chapter_id}")]
+            ])
+        )
+    
+    async def start_full_exam(self, update: Update, context: ContextTypes.DEFAULT_TYPE, chapter_id: int):
+        """Start a full exam mode"""
+        query = update.callback_query
+        
+        # TODO: Implement full exam logic
+        await query.edit_message_text(
+            "🏆 Starting full exam mode...\n\n(This feature will be implemented soon!)",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬅️ Back to Chapter", callback_data=f"select_chapter_{chapter_id}")]
+            ])
+        )
+
+# Create handler instance
+chapter_selection_handler = ChapterSelectionHandler()
+
+# Handler functions for dispatcher
+async def handle_chapters_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Main callback handler for chapter selection"""
+    return await chapter_selection_handler.handle_chapters_callback(update, context)
+</parameter>

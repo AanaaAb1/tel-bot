@@ -5,6 +5,7 @@ from app.models.user import User
 from app.services.user_service import get_or_create_user
 from app.keyboards.main_menu import main_menu
 from app.keyboards.stream_keyboard import stream_keyboard
+from app.config.constants import ADMIN_IDS
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /register command"""
@@ -16,15 +17,25 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.level and user.stream:
         # User is already registered
         if user.access == "LOCKED":
-            # User registered but not paid - redirect to payment
-            from app.keyboards.payment_keyboard import payment_keyboard
-            await update.message.reply_text(
-                "👋 **Welcome back!**\n\n"
-                "You are registered but need to complete payment to access features.\n\n"
-                "💳 **Please proceed with payment:**",
-                reply_markup=payment_keyboard(),
-                parse_mode="Markdown"
-            )
+            # CRITICAL: Admins ALWAYS skip payment checks
+            if update.message.from_user.id in ADMIN_IDS:
+                # Admin gets immediate access - no payment required!
+                await update.message.reply_text(
+                    "✅ **You are already registered and approved!**\n\n"
+                    "You can access all features. Choose an option:",
+                    reply_markup=main_menu(update.message.from_user.id),
+                    parse_mode="Markdown"
+                )
+            else:
+                # User registered but not paid - redirect to payment
+                from app.keyboards.payment_keyboard import payment_keyboard
+                await update.message.reply_text(
+                    "👋 **Welcome back!**\n\n"
+                    "You are registered but need to complete payment to access features.\n\n"
+                    "💳 **Please proceed with payment:**",
+                    reply_markup=payment_keyboard(),
+                    parse_mode="Markdown"
+                )
         else:
             # User registered and paid - show main menu
             await update.message.reply_text(
@@ -79,16 +90,24 @@ async def handle_registration_callback(update: Update, context: ContextTypes.DEF
         # Stream selection
         stream = data.replace("stream_", "")
         user.stream = stream
-        # Keep access LOCKED - user must pay first
+        
+        # CRITICAL: Admins get automatic access - no payment required!
+        if user_id in ADMIN_IDS:
+            user.access = "APPROVED"  # Auto-approve admin
+            admin_message = "\n\n👑 **Admin Access Granted!**\nYou have automatic access to all features."
+        else:
+            user.access = "LOCKED"  # Keep access LOCKED - user must pay first
+            admin_message = ""
+            
         db.commit()
         
-        # Registration complete - redirect to payment
+        # Registration complete
         from app.keyboards.payment_keyboard import payment_keyboard
         await query.edit_message_text(
             f"🎉 **Registration Complete!** 🎉\n\n"
             f"✅ **Level:** {user.level.title()}\n"
             f"✅ **Stream:** {stream.title()}\n\n"
-            f"🔒 **Next Step: Payment Required**\n\n"
+            f"🔒 **Next Step: Payment Required**{admin_message}\n\n"
             f"You must complete payment to access all features.\n\n"
             f"💳 **Payment Details:**\n"
             f"• Amount: Specify Amount\n"

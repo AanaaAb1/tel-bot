@@ -1,0 +1,32 @@
+2025-12-24 14:14:13,275 - __main__ - INFO - 🚀 Starting Smart Test Exam (Working Version)...
+2025-12-24 14:14:13,275 - __main__ - INFO - 🔑 Using bot token: 8184888715:AAEvw1RcR...
+2025-12-24 14:14:13,275 - __main__ - INFO - 🧹 Current process PID: 30416
+2025-12-24 14:14:13,284 - __main__ - INFO - 🗑️ Killing process 2670
+2025-12-24 14:14:13,301 - __main__ - INFO - 🧹 Cleaned up existing bot processes
+2025-12-24 14:14:13,301 - __main__ - INFO - 💾 Initializing database...
+2025-12-24 14:14:13,303 - __main__ - INFO - ✅ Database initialized successfully
+2025-12-24 14:14:13,364 - __main__ - INFO - 🔗 Using default Telegram API endpoint
+2025-12-24 14:14:13,366 - __main__ - INFO - ✅ Bot application built successfully with all handlers
+2025-12-24 14:14:13,366 - __main__ - INFO - 📡 Starting bot polling...
+2025-12-24 14:14:13,888 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getMe "HTTP/1.1 200 OK"
+2025-12-24 14:14:14,006 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/deleteWebhook "HTTP/1.1 200 OK"
+2025-12-24 14:14:14,010 - telegram.ext.Application - INFO - Application started
+2025-12-24 14:14:44,449 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:15:14,568 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:15:44,749 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:16:14,957 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:16:32,263 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:16:32,912 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/sendMessage "HTTP/1.1 200 OK"
+2025-12-24 14:17:02,471 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:17:32,679 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:18:02,889 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:18:33,069 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:18:38,010 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to/getUpdates "HTTP/1.1 200 OK"
+2025-12-24 14:18:38,011 - telegram.ext.Application - INFO - Application is stopping. This might take a moment.
+2025-12-24 14:18:38,011 - telegram.ext.Application - INFO - Application.stop() complete
+✅ Constants loaded successfully
+👥 Admin IDs: [5642507992, 7342121804]
+💰 Payment statuses: ['pending', 'approved', 'rejected', 'completed']
+📚 User levels: ['freshman', 'remedial']
+✅ Profile handlers registered successfully
+Start command received from 5642507992

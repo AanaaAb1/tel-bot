@@ -1,0 +1,35 @@
+QUESTION FLOW DIAGNOSTIC RESULTS
+==================================================
+=== QUESTION FLOW DIAGNOSTIC ===
+Starting diagnostic at 3325.740102388
+
+1. Testing imports...
+✅ All imports successful
+
+2. Setting up test data...
+✅ Mock data created - Total questions: 1
+✅ Current index: 0
+✅ Chat ID: 12345
+
+3. Testing poll question creation...
+✅ Poll created successfully:
+  - Question: 📝 Question 1/1
+
+What is 2+2?
+  - Options: ['A) 3', 'B) 4', 'C) 5', 'D) 6']
+  - Correct option ID: 1
+
+4. Testing question flow logic...
+✅ After answering: Index = 1
+✅ Total questions: 1
+✅ Has more questions: False
+✅ Should complete session - no more questions
+
+5. Testing show_next_question function...
+✅ Mock update created - chat ID: 12345
+✅ Mock context created
+  Testing with user_data['chat_id']: 12345
+  Testing with update.effective_chat.id: 12345
+  Testing with update.effective_user.id: 12345
+✅ Chat ID logic works: 12345
+❌ show_next_question test failed: list index out of range

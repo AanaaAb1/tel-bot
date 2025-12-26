@@ -1,0 +1,207 @@
+<parameter name="content">"""
+Comprehensive Bot Integration with Chapter Selection
+This file integrates all handlers including the new chapter selection functionality.
+"""
+import logging
+import os
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+from telegram import Update
+
+# Import all handlers
+from app.handlers.start_handler import start_command, back_to_main
+from app.handlers.menu_handler import main_menu_handler, handle_menu_callback
+from app.handlers.course_handler import select_course, start_exam_selected, handle_legacy_exams
+from app.handlers.chapter_selection_handler_fixed import handle_chapter_selection, handle_chapter_exam, handle_practice_mode
+from app.handlers.radio_question_handler import start_exam_with_polls, handle_poll_answer
+from app.handlers.question_handler import handle_question_callback, submit_answer
+from app.handlers.result_handler import show_results, back_to_menu
+from app.handlers.profile_handler import profile_command, handle_profile_callback
+from app.handlers.help_handler import help_command
+from app.handlers.register_handler import register_command, handle_registration
+from app.handlers.materials_handler import materials_command, handle_materials_callback
+from app.handlers.leaderboard_handler import leaderboard_command
+from app.handlers.payment_handler import payment_command, handle_payment_callback
+from app.handlers.admin_handler import admin_command, handle_admin_callback
+from app.handlers.admin_question_handler import handle_admin_question_callback
+from app.handlers.stream_course_handler import handle_stream_course_callback
+from app.handlers.stream_dashboard_handler import stream_dashboard_command
+
+# Import keyboards
+from app.keyboards.main_menu import main_menu
+from app.keyboards.payment_keyboard import payment_keyboard
+
+# Import services and database
+from app.database.session import SessionLocal
+from app.models.user import User
+from app.config.constants import BOT_TOKEN
+
+# Configure logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+async def error_handler(update, context):
+    """Handle errors gracefully"""
+    logger.warning(f'Update "{update}" caused error "{context.error}"')
+
+async def handle_unknown_callback(update: Update, context):
+    """Handle unknown callback queries"""
+    query = update.callback_query
+    await query.answer()
+    
+    # Default response for unknown callbacks
+    await query.edit_message_text(
+        "🔄 Processing...\n\n"
+        "This feature is being updated.\n"
+        "Please try again later or contact support.",
+        reply_markup=main_menu()
+    )
+
+def create_application():
+    """Create and configure the bot application"""
+    application = Application.builder().token(BOT_TOKEN).build()
+
+    # Command handlers
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("profile", profile_command))
+    application.add_handler(CommandHandler("materials", materials_command))
+    application.add_handler(CommandHandler("leaderboard", leaderboard_command))
+    application.add_handler(CommandHandler("payment", payment_command))
+    application.add_handler(CommandHandler("admin", admin_command))
+    application.add_handler(CommandHandler("register", register_command))
+    application.add_handler(CommandHandler("stream_dashboard", stream_dashboard_command))
+
+    # Callback query handlers - Order matters!
+    
+    # 1. Chapter Selection Handler (NEW - PRIORITY)
+    application.add_handler(CallbackQueryHandler(
+        handle_chapter_selection, 
+        pattern="^chapters_"
+    ))
+    
+    # 2. Chapter Exam and Practice Handlers (NEW - PRIORITY)
+    application.add_handler(CallbackQueryHandler(
+        handle_chapter_exam,
+        pattern="^start_chapter_"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        handle_practice_mode,
+        pattern="^practice_chapter_"
+    ))
+    
+    # 3. Course Handlers
+    application.add_handler(CallbackQueryHandler(
+        select_course, 
+        pattern="^exam_course_"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        handle_legacy_exams,
+        pattern="^legacy_exams_"
+    ))
+    
+    # 4. Exam and Question Handlers
+    application.add_handler(CallbackQueryHandler(
+        start_exam_selected,
+        pattern="^start_exam_"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        handle_poll_answer,
+        pattern="^poll_answer_"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        submit_answer,
+        pattern="^answer_"
+    ))
+    
+    # 5. Menu Handlers
+    application.add_handler(CallbackQueryHandler(
+        handle_menu_callback,
+        pattern="^(courses|profile|materials|leaderboard|payment|admin|help|stream)$"
+    ))
+    
+    # 6. Back navigation
+    application.add_handler(CallbackQueryHandler(
+        back_to_main,
+        pattern="^back_to_main$"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        back_to_menu,
+        pattern="^back_to_menu$"
+    ))
+    
+    # 7. Admin Handlers
+    application.add_handler(CallbackQueryHandler(
+        handle_admin_callback,
+        pattern="^admin_"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        handle_admin_question_callback,
+        pattern="^admin_add_question_"
+    ))
+    
+    # 8. Stream Course Handlers
+    application.add_handler(CallbackQueryHandler(
+        handle_stream_course_callback,
+        pattern="^stream_"
+    ))
+    
+    # 9. Payment Handlers
+    application.add_handler(CallbackQueryHandler(
+        handle_payment_callback,
+        pattern="^payment_"
+    ))
+    
+    # 10. Profile Handlers
+    application.add_handler(CallbackQueryHandler(
+        handle_profile_callback,
+        pattern="^profile_"
+    ))
+    
+    # 11. Materials Handlers
+    application.add_handler(CallbackQueryHandler(
+        handle_materials_callback,
+        pattern="^materials_"
+    ))
+    
+    # 12. Result Handlers
+    application.add_handler(CallbackQueryHandler(
+        show_results,
+        pattern="^results_"
+    ))
+    
+    # 13. Unknown callback handler (catch-all)
+    application.add_handler(CallbackQueryHandler(handle_unknown_callback))
+    
+    # Error handler
+    application.add_error_handler(error_handler)
+    
+    return application
+
+def main():
+    """Main function to start the bot"""
+    try:
+        # Create application
+        application = create_application()
+        
+        # Start the bot
+        logger.info("🚀 Starting Smart Test Bot with Chapter Selection...")
+        logger.info("✅ Chapter selection feature enabled")
+        logger.info("✅ Course integration completed")
+        logger.info("✅ Legacy exam support maintained")
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to start bot: {e}")
+        raise
+
+if __name__ == '__main__':
+    main()</parameter>

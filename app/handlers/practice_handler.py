@@ -1,8 +1,9 @@
 from app.database.session import SessionLocal
 from app.models.user import User
 from app.services.question_service import get_questions_by_course, get_questions_by_exam
-from app.handlers.radio_question_handler import start_exam_with_polls
+from app.handlers.radio_question_handler_poll import show_question_as_poll
 from app.keyboards.main_menu import main_menu
+from app.config.constants import ACCESS_UNLOCKED
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 import asyncio
 
@@ -18,7 +19,7 @@ async def start_practice(update, context):
     user = db.query(User).filter_by(telegram_id=user_id).first()
     db.close()
 
-    if not user or user.access != "UNLOCKED":
+    if not user or user.access != ACCESS_UNLOCKED:
         await query.edit_message_text(
             "🔒 Access Locked\n\nPlease complete payment to unlock practice sessions.",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("💳 Payment", callback_data="payment")]])
@@ -50,19 +51,41 @@ async def practice_by_course(update, context):
     )
 
 async def practice_course_selected(update, context):
-    """Start practice session for selected course"""
+    """Start practice session for selected course with enhanced question retrieval"""
     query = update.callback_query
     await query.answer()
 
     course_id = int(query.data.replace("practice_course_", ""))
 
-    # Get questions for this course
-    questions = get_questions_by_course(course_id, limit=10)
+    # Enhanced question retrieval using course/chapter organization
+    from app.services.question_service import get_questions_by_course_name
+    from app.models.course import Course
+    
+    db = SessionLocal()
+    try:
+        # Get course info
+        course = db.query(Course).filter_by(id=course_id).first()
+        if not course:
+            await query.edit_message_text(
+                "Course not found.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="practice_course")]])
+            )
+            return
+
+        # Get questions for this course using enhanced method
+        questions = get_questions_by_course_name(course.name, limit=10)
+
+    finally:
+        db.close()
 
     if not questions:
         await query.edit_message_text(
-            "No questions available for this course yet.",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="practice_course")]])
+            f"📚 No questions available yet for {course.name}.\n\n"
+            f"Ask an admin to add questions for this course.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("➕ Add Question", callback_data=f"admin_add_question_{course.id}_{course.name}")],
+                [InlineKeyboardButton("⬅️ Back", callback_data="practice_course")]
+            ])
         )
         return
 
@@ -73,9 +96,11 @@ async def practice_course_selected(update, context):
     context.user_data["index"] = 0
     context.user_data["practice_mode"] = True
     context.user_data["use_timer"] = False  # Can be made configurable
+    context.user_data["course_name"] = course.name
+    context.user_data["chapter_completion"] = True  # Enable chapter completion tracking
 
-    # Start practice with radio-style questions
-    await start_exam_with_polls(update, context, context.user_data)
+    # Start practice with radio-style poll questions
+    await show_question_as_poll(update, context, context.user_data)
 
 async def practice_by_chapter(update, context):
     """Show chapters (exams) for practice"""
@@ -94,7 +119,7 @@ async def practice_course_for_chapter(update, context):
     query = update.callback_query
     await query.answer()
 
-    course_id = int(query.data.replace("practice_course_", ""))
+    course_id = int(query.data.replace("practice_course_chapter_", ""))
 
     from app.keyboards.exam_keyboard import exam_selection_keyboard
 
@@ -127,6 +152,7 @@ async def practice_chapter_selected(update, context):
     context.user_data["index"] = 0
     context.user_data["practice_mode"] = True
     context.user_data["use_timer"] = False
+    context.user_data["chapter_completion"] = True  # Enable chapter completion tracking
 
-    # Start practice with radio-style questions
-    await start_exam_with_polls(update, context, context.user_data)
+    # Start practice with radio-style poll questions
+    await show_question_as_poll(update, context, context.user_data)

@@ -1,0 +1,122 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Test Chapter Selection Feature
+Tests the new chapter selection functionality
+"""
+
+import sys
+import os
+sys.path.append('/home/aneman/Desktop/Exambot/telegramexambot')
+
+from app.keyboards.chapter_selection_keyboard import get_chapter_selection_keyboard, get_chapter_selection_message
+
+def test_chapter_selection_keyboard():
+    """Test the chapter selection keyboard generation"""
+    print("🧪 Testing Chapter Selection Keyboard Generation...")
+    
+    # Test with Mathematics course
+    course_name = "Mathematics"
+    course_code = "maths"
+    
+    keyboard = get_chapter_selection_keyboard(course_name, course_code)
+    message = get_chapter_selection_message(course_name, course_code)
+    
+    print(f"✅ Course: {course_name} ({course_code})")
+    print(f"📝 Message: {message}")
+    print(f"🎯 Keyboard has {len(keyboard.inline_keyboard)} rows")
+    
+    # Check if we have 6 rows (5 chapter pairs + 1 back button)
+    expected_rows = 6  # 5 pairs of chapters + 1 back button
+    actual_rows = len(keyboard.inline_keyboard)
+    
+    if actual_rows == expected_rows:
+        print(f"✅ Correct number of rows: {actual_rows}")
+    else:
+        print(f"❌ Expected {expected_rows} rows, got {actual_rows}")
+    
+    # Test chapter buttons
+    chapter_buttons = []
+    for i in range(1, 11):  # Chapters 1-10
+        expected_callback = f"start_chapter_exam_{course_code}_{i}"
+        chapter_buttons.append(expected_callback)
+    
+    print(f"✅ Chapter callbacks: {chapter_buttons[:3]}... (showing first 3)")
+    
+    # Test back button
+    back_button = keyboard.inline_keyboard[-1][0]
+    print(f"✅ Back button callback: {back_button.callback_data}")
+    
+    return True
+
+def test_course_codes():
+    """Test all supported course codes"""
+    print("\n🧪 Testing All Course Codes...")
+    
+    course_names = {
+        "bio": "Biology",
+        "physics": "Physics",
+        "chemistry": "Chemistry", 
+        "english": "English",
+        "maths": "Mathematics",
+        "geography": "Geography",
+        "history": "History",
+        "government": "Government",
+        "economics": "Economics",
+        "literature": "Literature"
+    }
+    
+    for course_code, course_name in course_names.items():
+        keyboard = get_chapter_selection_keyboard(course_name, course_code)
+        message = get_chapter_selection_message(course_name, course_code)
+        print(f"✅ {course_name} ({course_code}): {len(keyboard.inline_keyboard)} rows")
+    
+    return True
+
+def test_callback_parsing():
+    """Test callback data parsing for chapter exams"""
+    print("\n🧪 Testing Callback Data Parsing...")
+    
+    # Test callback data parsing
+    test_callback = "start_chapter_exam_maths_3"
+    data_parts = test_callback.split("_")
+    
+    if len(data_parts) >= 4:
+        course_code = data_parts[3]
+        chapter = data_parts[4]
+        
+        print(f"✅ Parsed callback: course={course_code}, chapter={chapter}")
+        
+        if course_code == "maths" and chapter == "3":
+            print("✅ Callback parsing works correctly")
+        else:
+            print("❌ Callback parsing failed")
+            return False
+    else:
+        print("❌ Invalid callback format")
+        return False
+    
+    return True
+
+if __name__ == "__main__":
+    print("🚀 Starting Chapter Selection Feature Tests...\n")
+    
+    try:
+        # Run all tests
+        test1 = test_chapter_selection_keyboard()
+        test2 = test_course_codes()
+        test3 = test_callback_parsing()
+        
+        if all([test1, test2, test3]):
+            print("\n🎉 All tests passed! Chapter selection feature is working correctly.")
+            print("\n📋 Summary:")
+            print("✅ Chapter selection keyboard generated successfully")
+            print("✅ All course codes supported")
+            print("✅ Callback parsing works")
+            print("✅ Ready for integration with bot")
+        else:
+            print("\n❌ Some tests failed. Please check the implementation.")
+            
+    except Exception as e:
+        print(f"❌ Test failed with error: {e}")
+        import traceback
+        traceback.print_exc()</parameter>

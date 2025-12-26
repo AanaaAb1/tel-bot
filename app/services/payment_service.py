@@ -9,19 +9,31 @@ from app.config.constants import (
 )
 
 def create_payment(user_id, proof):
+    """Create a new payment and return the payment object"""
     db = SessionLocal()
 
-    payment = Payment(
-        user_id=user_id,
-        proof=proof,
-        status=PAYMENT_PENDING
-    )
-    db.add(payment)
-    db.commit()
-    db.close()
+    try:
+        payment = Payment(
+            user_id=user_id,
+            proof=proof,
+            status=PAYMENT_PENDING
+        )
+        db.add(payment)
+        db.commit()
+        
+        # Refresh to get the ID
+        db.refresh(payment)
+        return payment
+        
+    except Exception as e:
+        print(f"Error creating payment: {e}")
+        db.rollback()
+        return None
+    finally:
+        db.close()
 
 def approve_payment(payment_id):
-    """Approve payment and return success status"""
+    """Approve payment and return the payment object"""
     db = SessionLocal()
 
     try:
@@ -33,17 +45,18 @@ def approve_payment(payment_id):
             user.payment_status = PAYMENT_APPROVED
             user.access = ACCESS_UNLOCKED
             db.commit()
-            return True
+            db.refresh(payment)  # Refresh to get updated data
+            return payment
         else:
-            return False
+            return None
     except Exception as e:
         print(f"Error approving payment: {e}")
-        return False
+        return None
     finally:
         db.close()
 
 def reject_payment(payment_id):
-    """Reject payment and return success status"""
+    """Reject payment and return the payment object"""
     db = SessionLocal()
 
     try:
@@ -52,12 +65,13 @@ def reject_payment(payment_id):
         if payment:
             payment.status = PAYMENT_REJECTED
             db.commit()
-            return True
+            db.refresh(payment)  # Refresh to get updated data
+            return payment
         else:
-            return False
+            return None
     except Exception as e:
         print(f"Error rejecting payment: {e}")
-        return False
+        return None
     finally:
         db.close()
 

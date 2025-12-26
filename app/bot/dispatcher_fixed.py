@@ -2,31 +2,40 @@ from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
     MessageHandler,
-    PollAnswerHandler,
-    filters
+    filters,
+    PollAnswerHandler
 )
 
 from app.handlers.start_handler import start
 from app.handlers.register_handler import register, handle_registration_callback
 from app.handlers.onboarding_handler import onboarding
 from app.handlers.menu_handler import menu
-from app.handlers.profile_handler_fixed import profile_menu, copy_referral_code, copy_invitation_link, view_referral_history
+from app.handlers.profile_handler_fixed import register_profile_handlers
 from app.handlers.community_handler import community_menu, community_posts, study_groups, chat_rooms, community_leaders, create_post, like_posts, comment_post, join_group, join_chat, my_stats
 from app.handlers.materials_handler import materials_menu, course_materials, request_material
 from app.handlers.help_handler import help_handler, help_callback
-from app.handlers.payment_handler import (
+from app.handlers.payment_handler_fixed import (
+    payment_menu,
     submit_payment,
     receive_payment_proof
 )
-from app.handlers.admin_handler import (
+from app.handlers.admin_handler_fixed import (
     admin_payments, approve, reject, exam_analytics,
-    admin_panel, admin_users, admin_questions_menu,
+    admin_panel, admin_users, 
     admin_results, admin_export_menu, admin_export_csv, admin_export_excel,
-    admin_add_question_start, admin_edit_question_start, admin_delete_question_start,
     admin_back_main, handle_admin_text_input, edit_question, delete_question, admin_confirm_delete,
     admin_view_payment_details, admin_approve_payment, admin_reject_payment
 )
-from app.handlers.course_handler import select_course, start_exam_selected
+# Only use the fixed version - no conflicts
+from app.handlers.admin_question_handler_fixed import (
+    admin_questions_menu_enhanced,
+    admin_select_course_for_question,
+    admin_select_chapter_for_question,
+    admin_handle_question_step,
+    admin_handle_question_text_input,
+    admin_back_to_questions_menu
+)
+from app.handlers.course_handler import select_course, select_difficulty, start_exam_selected
 from app.handlers.question_handler import answer_question, show_detailed_result
 from app.handlers.stream_dashboard_handler import (
     natural_science_dashboard, 
@@ -50,9 +59,12 @@ from app.handlers.practice_handler import (
     practice_course_for_chapter,
     practice_chapter_selected
 )
-from app.handlers.radio_question_handler import handle_poll_answer
+from app.handlers.radio_question_handler_poll import handle_poll_answer
 
 def register_handlers(app):
+    # Poll answer handler for radio-style questions - register first
+    app.add_handler(PollAnswerHandler(handle_poll_answer))
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("register", register))
     app.add_handler(CommandHandler("help", help_handler))
@@ -77,24 +89,29 @@ def register_handlers(app):
     app.add_handler(CallbackQueryHandler(admin_approve_payment, pattern="^approve_payment_"))
     app.add_handler(CallbackQueryHandler(admin_reject_payment, pattern="^reject_payment_"))
     app.add_handler(CallbackQueryHandler(admin_payments, pattern="^admin_payments$"))
-    app.add_handler(CallbackQueryHandler(admin_questions_menu, pattern="^admin_questions$"))
+    app.add_handler(CallbackQueryHandler(admin_questions_menu_enhanced, pattern="^admin_questions$"))
     app.add_handler(CallbackQueryHandler(admin_results, pattern="^admin_results$"))
     app.add_handler(CallbackQueryHandler(admin_export_menu, pattern="^admin_export$"))
     app.add_handler(CallbackQueryHandler(admin_export_csv, pattern="^admin_export_csv$"))
     app.add_handler(CallbackQueryHandler(admin_export_excel, pattern="^admin_export_excel$"))
-    app.add_handler(CallbackQueryHandler(admin_add_question_start, pattern="^admin_add_question$"))
-    app.add_handler(CallbackQueryHandler(admin_edit_question_start, pattern="^admin_edit_question$"))
-    app.add_handler(CallbackQueryHandler(admin_delete_question_start, pattern="^admin_delete_question$"))
     app.add_handler(CallbackQueryHandler(admin_back_main, pattern="^admin_back_main$"))
     app.add_handler(CallbackQueryHandler(admin_confirm_delete, pattern="^admin_confirm_delete_"))
+    app.add_handler(CallbackQueryHandler(admin_select_course_for_question, pattern="^admin_select_course"))
+    app.add_handler(CallbackQueryHandler(admin_select_course_for_question, pattern="^admin_select_course_"))
+    app.add_handler(CallbackQueryHandler(admin_select_course_for_question, pattern="^admin_select_course_back$"))
+    app.add_handler(CallbackQueryHandler(admin_select_chapter_for_question, pattern="^admin_select_chapter_"))
+    app.add_handler(CallbackQueryHandler(admin_handle_question_step, pattern="^admin_question_"))
+    
+    # Admin question text input handler (must be before general text handler)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, admin_handle_question_text_input))
 
-    # Practice handlers
+    # Practice handlers - FIXED: Unique patterns to avoid conflicts
     app.add_handler(CallbackQueryHandler(start_practice, pattern="^practice$"))
     app.add_handler(CallbackQueryHandler(practice_by_course, pattern="^practice_course$"))
-    app.add_handler(CallbackQueryHandler(practice_course_selected, pattern="^practice_course_"))
+    app.add_handler(CallbackQueryHandler(practice_course_selected, pattern=r"^practice_course_(\d+)$"))  # Start practice for course
     app.add_handler(CallbackQueryHandler(practice_by_chapter, pattern="^practice_chapter$"))
-    app.add_handler(CallbackQueryHandler(practice_course_for_chapter, pattern="^practice_course_"))
-    app.add_handler(CallbackQueryHandler(practice_chapter_selected, pattern="^practice_chapter_"))
+    app.add_handler(CallbackQueryHandler(practice_course_for_chapter, pattern=r"^practice_course_chapter_(\d+)$"))  # Show chapters for practice
+    app.add_handler(CallbackQueryHandler(practice_chapter_selected, pattern=r"^practice_chapter_(\d+)$"))
 
     # Stream course selection handler (must be before general course handler)
     app.add_handler(get_stream_course_handler())
@@ -109,21 +126,17 @@ def register_handlers(app):
     app.add_handler(CallbackQueryHandler(select_natural_science_course, pattern="^select_ns_course$"))
     app.add_handler(CallbackQueryHandler(select_social_science_course, pattern="^select_ss_course$"))
     
-    # Course selection handlers
+    # Course selection handlers - NEW FLOW: Course → Difficulty → Chapters → Questions
     app.add_handler(CallbackQueryHandler(select_course, pattern="^exam_course_"))
+    app.add_handler(CallbackQueryHandler(select_difficulty, pattern="^difficulty_"))
     app.add_handler(CallbackQueryHandler(start_exam_selected, pattern="^start_exam_"))
 
     app.add_handler(CallbackQueryHandler(help_callback, pattern="^help$"))
     app.add_handler(CallbackQueryHandler(materials_menu, pattern="^materials$"))
     app.add_handler(CallbackQueryHandler(course_materials, pattern="^materials_course_"))
 
-    # Profile handlers - Specific patterns first
-    app.add_handler(CallbackQueryHandler(profile_menu, pattern="^profile$"))
-    app.add_handler(CallbackQueryHandler(copy_referral_code, pattern="^copy_code_"))
-    app.add_handler(CallbackQueryHandler(copy_invitation_link, pattern="^copy_link_"))
-    app.add_handler(CallbackQueryHandler(view_referral_history, pattern="^referral_history_"))
-
-    # Community handlers - Specific patterns first
+    # Profile handlers - Use the new ProfileHandler class
+    register_profile_handlers(app)
     app.add_handler(CallbackQueryHandler(community_menu, pattern="^community$"))
     app.add_handler(CallbackQueryHandler(community_posts, pattern="^community_posts$"))
     app.add_handler(CallbackQueryHandler(study_groups, pattern="^study_groups$"))
@@ -136,18 +149,14 @@ def register_handlers(app):
     app.add_handler(CallbackQueryHandler(join_chat, pattern="^join_chat$"))
     app.add_handler(CallbackQueryHandler(my_stats, pattern="^my_stats$"))
 
-    # Menu handler with specific patterns first, then general fallback
-    app.add_handler(CallbackQueryHandler(menu, pattern="^(exams|payment|materials|admin|help|analytics|back_to_main|courses|practice|profile|community)$"))
-    app.add_handler(CallbackQueryHandler(menu))
+    # Menu handler with specific patterns only - removed general fallback to avoid conflicts
+    app.add_handler(CallbackQueryHandler(menu, pattern="^(exams|payment|materials|admin|help|analytics|back_to_main|courses|practice|community)$"))
 
     # Admin text input handler (must be before the general text handler)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_admin_text_input))
 
     # Result command handler
     app.add_handler(MessageHandler(filters.Regex(r'^/result_\d+$'), show_detailed_result))
-    
-    # Poll answer handler for radio-style questions
-    app.add_handler(PollAnswerHandler(handle_poll_answer))
     
     # Payment proof handler (text, photos, documents)
     app.add_handler(MessageHandler(

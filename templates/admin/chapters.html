@@ -1,0 +1,284 @@
+
+{% extends "base.html" %}
+
+{% block title %}Chapters - {{ course.name }} - SmartTest Admin Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chapter-table-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .chapter-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .chapter-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .chapter-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .chapter-info h6 {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .chapter-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    .chapter-stats {
+        display: flex;
+        gap: 20px;
+        margin: 15px 0;
+    }
+    
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .chapter-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .btn-edit {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-edit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        color: white;
+    }
+    
+    .btn-delete:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(220, 53, 69, 0.4);
+        color: white;
+    }
+    
+    .btn-questions {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .btn-questions:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+    
+    .search-container {
+        margin-bottom: 20px;
+    }
+    
+    .search-input {
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        padding: 12px 20px;
+        width: 100%;
+        max-width: 400px;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('dashboard') }}" class="text-decoration-none">
+                <i class="fas fa-home me-1"></i>Dashboard
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('courses') }}" class="text-decoration-none">
+                <i class="fas fa-book me-1"></i>Courses
+            </a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            <i class="fas fa-list-alt me-1"></i>{{ course.name }}
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 mb-0">
+            <i class="fas fa-list-alt me-2 text-primary"></i>
+            Chapters
+        </h1>
+        <p class="text-muted mb-0">
+            Managing chapters for 
+            <strong>{{ course.name }}</strong>
+            <small class="ms-2">
+                <i class="fas fa-tag me-1"></i>
+                {{ course.code }}
+            </small>
+        </p>
+    </div>
+    
+    <div>
+        <a href="{{ url_for('add_chapter', course_id=course.id) }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus me-2"></i>
+            Add Chapter
+        </a>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="search-container">
+    <div class="search-group position-relative">
+        <i class="fas fa-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #666;"></i>
+        <input type="text" 
+               class="search-input" 
+               id="chapterSearch" 
+               placeholder="Search chapters..."
+               style="padding-left: 45px;">
+    </div>
+</div>
+
+<!-- Chapters List -->
+<div class="chapter-table-container">
+    {% if chapters %}
+        {% for chapter in chapters %}
+        <div class="chapter-card">
+            <div class="chapter-header">
+                <div class="chapter-info">
+                    <h6>{{ chapter.name }}</h6>
+                    {% if chapter.description %}
+                    <div class="chapter-description">
+                        {{ chapter.description }}
+                    </div>
+                    {% endif %}
+                    <div class="chapter-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-question-circle text-primary"></i>
+                            <span>{{ chapter.questions_count }} Questions</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-calendar text-muted"></i>
+                            <span>Created {{ chapter.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chapter-actions">
+                    <a href="{{ url_for('questions', chapter_id=chapter.id) }}" 
+                       class="btn btn-questions btn-sm">
+                        <i class="fas fa-list me-1"></i>
+                        View Questions
+                    </a>
+                    
+                    <a href="{{ url_for('edit_chapter', course_id=course.id, chapter_id=chapter.id) }}" 
+                       class="btn btn-edit btn-sm">
+                        <i class="fas fa-edit me-1"></i>
+                        Edit
+                    </a>
+                    
+                    <form method="POST" 
+                          action="{{ url_for('delete_chapter', course_id=course.id, chapter_id=chapter.id) }}" 
+                          style="display: inline;"
+                          onsubmit="return confirm('Are you sure you want to delete this chapter? All questions will also be deleted.');">
+                        <button type="submit" class="btn btn-delete btn-sm">
+                            <i class="fas fa-trash me-1"></i>
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-list-alt fa-3x text-muted mb-3"></i>
+            <h3 class="text-muted">No chapters found</h3>
+            <p class="text-muted">Start by creating the first chapter for this course.</p>
+            <a href="{{ url_for('add_chapter', course_id=course.id) }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>
+                Add First Chapter
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('chapterSearch');
+    const chapterCards = document.querySelectorAll('.chapter-card');
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        chapterCards.forEach(card => {
+            const chapterName = card.querySelector('h6').textContent.toLowerCase();
+            const chapterDescription = card.querySelector('.chapter-description').textContent.toLowerCase();
+            
+            if (chapterName.includes(searchTerm) || chapterDescription.includes(searchTerm)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+    
+    // Auto-hide success messages
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert-success');
+        alerts.forEach(alert => {
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 300);
+        });
+    }, 3000);
+});
+</script>
+{% endblock %}
+

@@ -6,11 +6,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 def create_poll_question(question, question_number, total_questions):
-    """Create a poll for the question"""
+    """Create a poll for the question - FIXED to use correct_answer field"""
     if is_true_false_question(question):
         # True/False poll
         options = ["TRUE", "FALSE"]
-        correct_option_id = 0 if question.correct_option == "TRUE" else 1
+        correct_option_id = 0 if question.correct_answer == "TRUE" else 1
     else:
         # Multiple choice poll
         options = []
@@ -18,19 +18,19 @@ def create_poll_question(question, question_number, total_questions):
         
         if question.option_a:
             options.append(question.option_a)
-            if question.correct_option == "A":
+            if question.correct_answer == "A":
                 correct_option_id = len(options) - 1
         if question.option_b:
             options.append(question.option_b)
-            if question.correct_option == "B":
+            if question.correct_answer == "B":
                 correct_option_id = len(options) - 1
         if question.option_c:
             options.append(question.option_c)
-            if question.correct_option == "C":
+            if question.correct_answer == "C":
                 correct_option_id = len(options) - 1
         if question.option_d:
             options.append(question.option_d)
-            if question.correct_option == "D":
+            if question.correct_answer == "D":
                 correct_option_id = len(options) - 1
 
     # Add A, B, C, D labels if not already present
@@ -61,7 +61,7 @@ def create_practice_selection_keyboard(course_id):
     """Create keyboard for selecting practice type"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📖 Practice by Course", callback_data=f"practice_course_{course_id}")],
-        [InlineKeyboardButton("📋 Practice by Chapter", callback_data=f"practice_chapter_{course_id}")],
+        [InlineKeyboardButton("📋 Practice by Chapter", callback_data=f"practice_course_chapter_{course_id}")],
         [InlineKeyboardButton("⬅️ Back to Courses", callback_data="courses")]
     ])
 
@@ -69,9 +69,9 @@ def create_chapter_selection_keyboard(exams, course_id):
     """Create keyboard for selecting chapters"""
     buttons = []
     for exam in exams:
-        buttons.append([InlineKeyboardButton(exam.name, callback_data=f"practice_exam_{exam.id}")])
+        buttons.append([InlineKeyboardButton(exam.name, callback_data=f"practice_chapter_{exam.id}")])
     
-    buttons.append([InlineKeyboardButton("⬅️ Back to Course", callback_data=f"practice_course_{course_id}")])
+    buttons.append([InlineKeyboardButton("⬅️ Back to Course", callback_data=f"practice_course_chapter_{course_id}")])
     return InlineKeyboardMarkup(buttons)
 
 def create_result_keyboard(result_data):
@@ -91,3 +91,4 @@ def create_detailed_result_keyboard():
         [InlineKeyboardButton("📚 Practice More", callback_data="practice")],
         [InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_main")]
     ])
+

@@ -1,0 +1,73 @@
+<parameter name="content">from app.database.session import SessionLocal
+from app.models.course import Course
+from app.models.chapter import Chapter
+
+def main():
+    try:
+        db = SessionLocal()
+        
+        # Check existing courses
+        courses = db.query(Course).all()
+        existing_names = [course.name for course in courses]
+        
+        print(f"Found {len(courses)} existing courses: {existing_names}")
+        
+        # Courses to add
+        courses_to_add = [
+            {"name": "Mathematics", "description": "Mathematics course", "code": "math"},
+            {"name": "Chemistry", "description": "Chemistry course", "code": "chem"},
+            {"name": "English", "description": "English course", "code": "eng"},
+            {"name": "Geography", "description": "Geography course", "code": "geo"},
+            {"name": "History", "description": "History course", "code": "hist"},
+            {"name": "Government", "description": "Government course", "code": "gov"},
+            {"name": "Economics", "description": "Economics course", "code": "econ"},
+            {"name": "Literature", "description": "Literature course", "code": "lit"}
+        ]
+        
+        created_count = 0
+        for course_data in courses_to_add:
+            if course_data["name"] not in existing_names:
+                new_course = Course(
+                    name=course_data["name"],
+                    description=course_data["description"],
+                    code=course_data["code"]
+                )
+                db.add(new_course)
+                db.commit()
+                db.refresh(new_course)
+                
+                # Create 10 chapters for each course
+                for i in range(1, 11):
+                    new_chapter = Chapter(
+                        name=f"Chapter {i}",
+                        description=f"Chapter {i}",
+                        course_id=new_course.id
+                    )
+                    db.add(new_chapter)
+                
+                db.commit()
+                print(f"Created {course_data['name']} with 10 chapters")
+                created_count += 1
+            else:
+                print(f"Skipping {course_data['name']} - already exists")
+        
+        # Final count
+        total_courses = db.query(Course).all()
+        print(f"\nTotal courses now: {len(total_courses)}")
+        
+        for course in sorted(total_courses, key=lambda x: x.id):
+            chapters_count = db.query(Chapter).filter_by(course_id=course.id).count()
+            print(f"{course.id}. {course.name} - {chapters_count} chapters")
+        
+        db.close()
+        print("Done!")
+        return True
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        if 'db' in locals():
+            db.close()
+        return False
+
+if __name__ == "__main__":
+    main()</parameter>

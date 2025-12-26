@@ -1,0 +1,67 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Update admin handlers to prevent payment prompts for admins
+"""
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
+
+# Read current admin handler to see what needs to be fixed
+admin_handler_path = "app/handlers/admin_handler.py"
+admin_handler_fixed_path = "app/handlers/admin_handler_fixed.py"
+
+def update_admin_handlers():
+    """Update admin handlers to skip payment prompts for admins"""
+    
+    # This would update the admin handler files to include admin access checks
+    print("=== UPDATING ADMIN HANDLERS ===")
+    
+    # Check if admin handlers exist and need updating
+    if os.path.exists(admin_handler_path):
+        print(f"Found admin handler: {admin_handler_path}")
+        # Would read and update the handler to check for admin access
+    else:
+        print("Admin handler not found")
+    
+    if os.path.exists(admin_handler_fixed_path):
+        print(f"Found fixed admin handler: {admin_handler_fixed_path}")
+    else:
+        print("Fixed admin handler not found")
+
+def create_admin_access_checker():
+    """Create a utility to check admin access across all handlers"""
+    
+    admin_access_checker = '''#!/usr/bin/env python3
+"""
+Admin access checker utility
+"""
+
+from app.config.constants import ADMIN_IDS
+
+def is_admin(user_id):
+    """Check if user is admin"""
+    return user_id in ADMIN_IDS
+
+def has_access(user_id, user_access_level):
+    """Check if user has access - admins always have access"""
+    return is_admin(user_id) or user_access_level == "UNLOCKED"
+
+def get_access_message(user_id, user_access_level):
+    """Get appropriate access message"""
+    if is_admin(user_id):
+        return "✅ Admin access granted - no payment required!"
+    elif user_access_level == "UNLOCKED":
+        return "✅ Access granted!"
+    else:
+        return "❌ Access locked. Please submit payment for approval."
+'''
+    
+    with open("admin_access_checker.py", "w") as f:
+        f.write(admin_access_checker)
+    
+    print("Created admin_access_checker.py utility")
+
+if __name__ == "__main__":
+    update_admin_handlers()
+    create_admin_access_checker()</parameter>

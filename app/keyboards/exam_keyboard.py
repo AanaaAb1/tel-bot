@@ -42,20 +42,20 @@ def format_question_text(question):
     return text
 
 def exam_selection_keyboard(course_id):
-    """Create keyboard for selecting exams/chapters for practice"""
+    """Create keyboard for selecting chapters for practice"""
     from app.database.session import SessionLocal
-    from app.models.exam import Exam
+    from app.models.chapter import Chapter
 
     db = SessionLocal()
-    exams = db.query(Exam).filter_by(course_id=course_id).all()
+    chapters = db.query(Chapter).filter_by(course_id=course_id).all()
     db.close()
 
     buttons = [
-        [InlineKeyboardButton(exam.name, callback_data=f"practice_chapter_{exam.id}")]
-        for exam in exams
+        [InlineKeyboardButton(chapter.name, callback_data=f"practice_chapter_{chapter.id}")]
+        for chapter in chapters
     ]
 
-    # Add back button
-    buttons.append([InlineKeyboardButton("⬅️ Back to Courses", callback_data="practice_course")])
+    # Add back button - fix callback data to match handler pattern
+    buttons.append([InlineKeyboardButton("⬅️ Back to Courses", callback_data=f"practice_course_chapter_{course_id}")])
 
     return InlineKeyboardMarkup(buttons)

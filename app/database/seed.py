@@ -49,7 +49,7 @@ def seed_database():
         questions = [
             Question(exam_id=bio_exam.id, text="What is the basic unit of life?", option_a="Atom", option_b="Cell", option_c="Molecule", option_d="Tissue", correct_option="B"),
             Question(exam_id=phys_exam.id, text="What is the SI unit of force?", option_a="Newton", option_b="Joule", option_c="Watt", option_d="Pascal", correct_option="A"),
-            Question(exam_id=hist_exam.id, text="When did World War II end?", option_a="1944", option_b="1945", option_c="1946", option_d="1947", correct_option="B"),
+            Question(exam_id=maths_exam.id, text="What is 2+2?", option_a="3", option_b="4", option_c="5", option_d="6", correct_option="B"),
         ]
 
         for q in questions:

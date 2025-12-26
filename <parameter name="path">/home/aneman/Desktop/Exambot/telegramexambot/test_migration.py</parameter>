@@ -1,0 +1,39 @@
+<parameter name="content">#!/usr/bin/env python3
+"""Test migration script"""
+
+try:
+    from app.database.session import SessionLocal
+    from sqlalchemy import text
+    
+    db = SessionLocal()
+    
+    # Check if chapters table exists
+    result = db.execute(text('SELECT name FROM sqlite_master WHERE type="table" AND name="chapters"'))
+    table_exists = result.fetchone() is not None
+    print(f'Chapters table exists: {table_exists}')
+    
+    if table_exists:
+        # Check if chapters were created
+        result = db.execute(text('SELECT COUNT(*) FROM chapters'))
+        chapter_count = result.scalar()
+        print(f'Chapters created: {chapter_count}')
+        
+        # Check if questions have chapter_id
+        result = db.execute(text('PRAGMA table_info(questions)'))
+        columns = [row[1] for row in result.fetchall()]
+        has_chapter_id = 'chapter_id' in columns
+        print(f'Questions table has chapter_id: {has_chapter_id}')
+        
+        if has_chapter_id:
+            result = db.execute(text('SELECT COUNT(*) FROM questions WHERE chapter_id IS NOT NULL'))
+            questions_with_chapters = result.scalar()
+            print(f'Questions with chapters: {questions_with_chapters}')
+    
+    db.close()
+    print('✅ Database migration test completed')
+    
+except Exception as e:
+    print(f'❌ Error: {e}')
+    import traceback
+    traceback.print_exc()
+</parameter>

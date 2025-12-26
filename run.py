@@ -27,37 +27,24 @@ except Exception as e:
     sys.exit(1)
 
 # Import database
-from app.database.session import Base, engine, SessionLocal
-from app.database.models import User, Course, Chapter, Question, Payment, PracticeSession
+from app.database.base import Base
+from app.database.session import engine, SessionLocal
+from app.models import User, Course, Chapter, Question, Payment, Exam, Answer, Result
 
 # Import handlers
-from app.handlers.start_handler import start_handler
-from app.handlers.help_handler import help_handler
-from app.handlers.menu_handler_fixed import menu_handler
-from app.handlers.register_handler_updated import register_handler
-from app.handlers.profile_handler_fixed import profile_handler
-from app.handlers.materials_handler import materials_handler
-from app.handlers.practice_handler import practice_handler
-from app.handlers.course_handler_fixed import course_handler
-from app.handlers.course_handler_admin_fixed import course_admin_handler
-from app.handlers.chapter_selection_handler_fixed import chapter_selection_handler
-from app.handlers.radio_question_handler import radio_question_handler
-from app.handlers.payment_handler_fixed import payment_handler
-from app.handlers.admin_handler_fixed import admin_handler
-from app.handlers.admin_question_handler_fixed import admin_question_handler
-from app.handlers.stream_course_handler import stream_course_handler
+from app.bot.dispatcher_fixed import register_handlers
 
 # Import keyboards
-from app.keyboards.menu_keyboard import get_main_menu_keyboard
-from app.keyboards.admin_keyboard import get_admin_keyboard
+# from app.keyboards.menu_keyboard import get_main_menu_keyboard
+# from app.keyboards.admin_keyboard import get_admin_keyboard
 
 # Import services
-from app.services.user_service import UserService
-from app.services.course_service import CourseService
-from app.services.chapter_service import ChapterService
-from app.services.question_service import QuestionService
-from app.services.payment_service import PaymentService
-from app.services.practice_service import PracticeService
+# from app.services.user_service import UserService
+# from app.services.course_service import CourseService
+# from app.services.chapter_service import ChapterService
+# from app.services.question_service import QuestionService
+# from app.services.payment_service import PaymentService
+# from app.services.practice_service import PracticeService
 
 # Import utilities
 from app.utils.process_manager import ProcessManager
@@ -74,28 +61,11 @@ app = None
 db = None
 process_manager = None
 
-def signal_handler(signum, frame):
-    """Handle shutdown signals gracefully"""
-    logging.info("Received shutdown signal, cleaning up...")
-    global app, db, process_manager
-    
-    if process_manager:
-        process_manager.cleanup()
-    
-    if db:
-        db.close()
-    
-    if app:
-        # Clean shutdown
-        pass
-    
-    sys.exit(0)
-
 def cleanup_processes():
     """Clean up any existing bot processes"""
     global process_manager
     process_manager = ProcessManager()
-    process_manager.cleanup()
+    process_manager.cleanup_existing_bot()
     logging.info("Cleaned up existing bot processes")
 
 async def initialize_database():
@@ -149,44 +119,11 @@ async def create_application():
         logging.error(f"Application creation failed: {e}")
         return None
 
-def register_handlers(app):
-    """Register all handlers with the application"""
-    try:
-        # Command handlers
-        app.add_handler(start_handler)
-        app.add_handler(help_handler)
-        app.add_handler(register_handler)
-        app.add_handler(menu_handler)
-        app.add_handler(profile_handler)
-        
-        # Callback query handlers (in order)
-        app.add_handler(practice_handler)
-        app.add_handler(course_handler)
-        app.add_handler(course_admin_handler)
-        app.add_handler(chapter_selection_handler)
-        app.add_handler(radio_question_handler)
-        app.add_handler(payment_handler)
-        app.add_handler(admin_handler)
-        app.add_handler(admin_question_handler)
-        app.add_handler(stream_course_handler)
-        app.add_handler(materials_handler)
-        
-        logging.info("✅ Profile handlers registered successfully")
-        logging.info("Bot application built successfully with all handlers")
-        
-    except Exception as e:
-        logging.error(f"Handler registration failed: {e}")
-        raise
-
 async def main():
     """Main function"""
     global app, db
     
     try:
-        # Setup signal handlers
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
-        
         # Get current process PID
         pid = os.getpid()
         logging.info(f"Current process PID: {pid}")
@@ -213,18 +150,41 @@ async def main():
         # Register handlers
         register_handlers(app)
         
-        # Start polling with the FIX
+        # Start polling with proper async startup
         logging.info("Starting bot polling...")
         print("🚀 Bot is running! Press Ctrl+C to stop.")
         
-        # THIS IS THE CRITICAL FIX - close_loop=False prevents event loop conflicts
-        await app.run_polling(
-            allowed_updates=['message', 'callback_query', 'poll'],
-            drop_pending_updates=True,
-            timeout=30,
-            close_loop=False,  # ← THIS FIXES THE EVENT LOOP ISSUE
-            bootstrap_retries=3
-        )
+        # Use async context manager for proper startup
+        async with app:
+            await app.start()
+            await app.updater.start_polling(
+                allowed_updates=['message', 'callback_query', 'poll'],
+                drop_pending_updates=True,
+                timeout=30,
+                bootstrap_retries=3
+            )
+            
+            # Set up signal handling for graceful shutdown
+            stop_event = asyncio.Event()
+            
+            def signal_handler(signum):
+                logging.info(f"Received signal {signum}, stopping bot...")
+                stop_event.set()
+            
+            # Register signal handlers
+            loop = asyncio.get_running_loop()
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                loop.add_signal_handler(sig, signal_handler, sig)
+            
+            # Wait for stop signal
+            try:
+                await stop_event.wait()
+            finally:
+                logging.info("Stopping updater...")
+                await app.updater.stop()
+                logging.info("Stopping application...")
+                await app.stop()
+                logging.info("Bot stopped gracefully")
         
         return True
         
@@ -237,11 +197,6 @@ async def main():
         logging.error(traceback.format_exc())
         return False
     finally:
-        if app:
-            logging.info("Stopping application...")
-            await app.stop()
-            await app.shutdown()
-        
         if db:
             db.close()
 

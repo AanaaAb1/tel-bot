@@ -1,0 +1,94 @@
+<parameter name="content">#!/usr/bin/env python3
+"""Simple test to verify timer functionality in radio_question_handler.py"""
+
+import sys
+import os
+
+# Add the project root to the Python path
+sys.path.insert(0, '/home/aneman/Desktop/Exambot/telegramexambot')
+
+try:
+    from app.handlers.radio_question_handler import get_timer_duration, create_poll_question
+    
+    print("🧪 Testing timer functionality...")
+    
+    # Test timer duration function
+    test_cases = [
+        ("Mathematics", 120),
+        ("Biology", 60),
+        ("", 60),
+        ("Unknown Course", 60),
+    ]
+    
+    print("\n📊 Testing get_timer_duration function:")
+    all_passed = True
+    for course_name, expected in test_cases:
+        actual = get_timer_duration(course_name)
+        status = "✅ PASS" if actual == expected else "❌ FAIL"
+        if actual != expected:
+            all_passed = False
+        print(f"{status} {course_name or 'None':<15} -> {actual}s (expected {expected}s)")
+    
+    # Test create_poll_question function with a mock question
+    class MockQuestion:
+        def __init__(self):
+            self.id = 1
+            self.text = "What is 2+2?"
+            self.correct_answer = "A"
+            self.option_a = "4"
+            self.option_b = "3"
+            self.option_c = "5"
+            self.option_d = "6"
+    
+    mock_question = MockQuestion()
+    
+    print("\n📋 Testing create_poll_question function:")
+    
+    # Test with Mathematics course (2 minutes)
+    try:
+        result = create_poll_question(mock_question, 1, 5, "Mathematics")
+        print(f"✅ Mathematics course test:")
+        print(f"   Timer Duration: {result['timer_duration']}s")
+        print(f"   Question preview: {result['question'][:50]}...")
+        if result['timer_duration'] == 120:
+            print("   ✅ PASS - Correct timer duration")
+        else:
+            print("   ❌ FAIL - Incorrect timer duration")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Error testing Mathematics course: {e}")
+        all_passed = False
+    
+    # Test with Biology course (1 minute)
+    try:
+        result = create_poll_question(mock_question, 2, 5, "Biology")
+        print(f"\n✅ Biology course test:")
+        print(f"   Timer Duration: {result['timer_duration']}s")
+        print(f"   Question preview: {result['question'][:50]}...")
+        if result['timer_duration'] == 60:
+            print("   ✅ PASS - Correct timer duration")
+        else:
+            print("   ❌ FAIL - Incorrect timer duration")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Error testing Biology course: {e}")
+        all_passed = False
+    
+    # Final result
+    print(f"\n{'='*50}")
+    if all_passed:
+        print("🎉 ALL TESTS PASSED! Timer functionality is working correctly!")
+        print("✅ Radio question handler successfully includes timer information")
+        print("✅ Questions now display timer duration in the format: ⏰ X minute(s)")
+    else:
+        print("❌ SOME TESTS FAILED! Please check the timer functionality")
+    print(f"{'='*50}")
+    
+except ImportError as e:
+    print(f"❌ Import error: {e}")
+    print("This suggests there may be a syntax error in the radio_question_handler.py file")
+except Exception as e:
+    print(f"❌ Unexpected error: {e}")
+    import traceback
+    traceback.print_exc()
+</parameter>

@@ -1,0 +1,45 @@
+<parameter name="content">#!/usr/bin/env python3
+
+from app.database.session import SessionLocal
+from app.models.course import Course
+from app.models.chapter import Chapter
+
+def verify_courses():
+    try:
+        db = SessionLocal()
+        
+        # Check existing courses
+        courses = db.query(Course).all()
+        existing_names = [course.name for course in courses]
+        
+        print(f"Found {len(courses)} courses:")
+        
+        for course in sorted(courses, key=lambda x: x.id):
+            chapters_count = db.query(Chapter).filter_by(course_id=course.id).count()
+            print(f"{course.id}. {course.name} - {chapters_count} chapters")
+        
+        # Check if expected courses are present
+        expected_courses = [
+            "Biology", "Physics", "Mathematics", "Chemistry", 
+            "English", "Geography", "History", "Government", 
+            "Economics", "Literature"
+        ]
+        
+        print("\nExpected courses status:")
+        for expected_course in expected_courses:
+            if expected_course in existing_names:
+                print(f"✓ {expected_course} - Present")
+            else:
+                print(f"✗ {expected_course} - Missing")
+        
+        db.close()
+        return True
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        if 'db' in locals():
+            db.close()
+        return False
+
+if __name__ == "__main__":
+    verify_courses()</parameter>

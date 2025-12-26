@@ -1,0 +1,5 @@
+course,chapter,type,question_text,option_a,option_b,option_c,option_d,correct_option,explanation
+Biology,Chapter 1,Theory,What is the cell’s powerhouse?,Nucleus,Mitochondria,Ribosome,Cytoplasm,B,Mitochondria produces energy (ATP).
+Biology,Chapter 1,Calculation,1 mole of substance has how many particles?,6.02e22,6.02e23,6.02e24,6.02e25,B,Avogadro’s number = 6.022e23 particles.
+Physics,Chapter 7,Theory,First Law of Thermodynamics states?,Heat = Work,ΔU = Q − W,Entropy constant,W = P·V,B,ΔU = Q − W for closed systems.
+Physics,Chapter 7,Calculation,Work done in isothermal process,864 J,1,247 J,1,730 J,2,493 J,C,W = nRT ln(V2/V1)

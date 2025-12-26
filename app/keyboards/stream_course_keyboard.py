@@ -112,3 +112,54 @@ def get_stream_courses_message(stream, user_id=None):
             return "🌍 Social Science Stream Courses\n\nSelect your course for exams and practice:"
     else:
         return "📚 Available Courses\n\nSelect your course for exams and practice:"
+
+def get_all_courses_keyboard():
+    """Get keyboard with ALL courses available to both streams"""
+    all_courses = [
+        ("📐 Mathematics", "maths"),
+        ("📝 English", "english"),
+        ("🧬 Biology", "bio"),
+        ("⚛️ Physics", "physics"),
+        ("⚗️ Chemistry", "chemistry"),
+        ("📜 History", "history"),
+        ("🌍 Geography", "geography")
+    ]
+
+        # Create keyboard with all courses in 2 columns
+    keyboard = []
+    for i in range(0, len(all_courses), 2):
+        row = []
+        # Add first button - route to course selection first
+        course_name, course_code = all_courses[i]
+        row.append(InlineKeyboardButton(
+            course_name,
+            callback_data=f"exam_course_{course_code}"
+        ))
+
+        # Add second button if available
+        if i + 1 < len(all_courses):
+            course_name, course_code = all_courses[i + 1]
+            row.append(InlineKeyboardButton(
+                course_name,
+                callback_data=f"exam_course_{course_code}"
+            ))
+
+        keyboard.append(row)
+
+    # Add back button
+    keyboard.append([InlineKeyboardButton("↩️ Back to Main Menu", callback_data="back_to_main")])
+
+    return InlineKeyboardMarkup(keyboard)
+
+def get_all_courses_message():
+    """Get message showing ALL courses available to both streams"""
+    return """🎓 ALL COURSES AVAILABLE - Complete Course Library
+
+🧬 Natural Science Subjects:
+• Mathematics, English, Biology, Physics, Chemistry
+
+🌍 Social Science Subjects:
+• History, Geography
+
+All courses are now available to both Natural Science and Social Science students!
+Select any course to start your exam:"""

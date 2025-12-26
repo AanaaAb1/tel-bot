@@ -1,0 +1,90 @@
+<parameter name="content">from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from app.services.chapter_service import ChapterService
+from app.database.session import SessionLocal
+
+def get_chapter_selection_keyboard(course_id: int):
+    """Create keyboard for chapter selection"""
+    db = SessionLocal()
+    chapter_service = ChapterService(db)
+    
+    try:
+        # Get chapters for the course
+        chapters = chapter_service.get_chapters_by_course(course_id)
+        
+        if not chapters:
+            return InlineKeyboardMarkup([
+                [InlineKeyboardButton("❌ No chapters available", callback_data="no_chapters")],
+                [InlineKeyboardButton("⬅️ Back to Courses", callback_data="courses")]
+            ])
+        
+        keyboard_buttons = []
+        
+        # Create chapter buttons
+        for chapter in chapters:
+            question_count = len(chapter.questions)
+            button_text = f"📚 {chapter.name}"
+            if question_count > 0:
+                button_text += f" ({question_count} questions)"
+            
+            keyboard_buttons.append([
+                InlineKeyboardButton(
+                    button_text, 
+                    callback_data=f"select_chapter_{chapter.id}"
+                )
+            ])
+        
+        # Add navigation buttons
+        keyboard_buttons.append([
+            InlineKeyboardButton("⬅️ Back to Courses", callback_data="courses"),
+            InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_main")
+        ])
+        
+        return InlineKeyboardMarkup(keyboard_buttons)
+        
+    except Exception as e:
+        print(f"Error creating chapter selection keyboard: {e}")
+        return InlineKeyboardMarkup([
+            [InlineKeyboardButton("❌ Error loading chapters", callback_data="courses")],
+            [InlineKeyboardButton("⬅️ Back to Courses", callback_data="courses")]
+        ])
+    finally:
+        db.close()
+
+def get_chapter_exam_keyboard(chapter_id: int):
+    """Create keyboard for chapter exam options"""
+    db = SessionLocal()
+    
+    try:
+        # Get questions for this chapter
+        result = db.execute(
+            "SELECT COUNT(*) FROM questions WHERE chapter_id = :chapter_id",
+            {"chapter_id": chapter_id}
+        )
+        question_count = result.scalar()
+        
+        keyboard_buttons = [
+            [InlineKeyboardButton("📝 Start Practice Exam", callback_data=f"start_chapter_exam_{chapter_id}")],
+            [InlineKeyboardButton("🎯 Quick Quiz (10 questions)", callback_data=f"start_quick_quiz_{chapter_id}")],
+        ]
+        
+        if question_count >= 20:
+            keyboard_buttons.append([
+                InlineKeyboardButton("🏆 Full Exam Mode", callback_data=f"start_full_exam_{chapter_id}")
+            ])
+        
+        keyboard_buttons.extend([
+            [InlineKeyboardButton("⬅️ Back to Chapters", callback_data="chapters")],
+            [InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_main")]
+        ])
+        
+        return InlineKeyboardMarkup(keyboard_buttons)
+        
+    except Exception as e:
+        print(f"Error creating chapter exam keyboard: {e}")
+        return InlineKeyboardMarkup([
+            [InlineKeyboardButton("❌ Error loading exam options", callback_data="chapters")],
+            [InlineKeyboardButton("⬅️ Back to Chapters", callback_data="chapters")]
+        ])
+    finally:
+        db.close()
+</parameter>

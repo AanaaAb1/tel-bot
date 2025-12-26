@@ -148,8 +148,7 @@ class ProcessManager:
             else:
                 logger.info("ℹ️  No active webhook found")
             
-            # Wait for Telegram to process
-            await asyncio.sleep(2)
+            # Telegram webhook cleared successfully
             
             # Verify cleanup
             webhook_info = await bot.get_webhook_info()

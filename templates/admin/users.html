@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block title %}Users - SmartTest Admin Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-table-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .user-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .user-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .user-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .user-info h6 {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .user-username {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .user-level-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .user-level-admin {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+    }
+    
+    .user-level-student {
+        background: linear-gradient(135deg, #4834d4 0%, #686de0 100%);
+        color: white;
+    }
+    
+    .user-status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .user-status-approved {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .user-status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .user-status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .user-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-approve {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+    }
+    
+    .btn-approve:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+    
+    .btn-reject {
+        background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        border: none;
+        color: white;
+    }
+    
+    .btn-reject:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(220, 53, 69, 0.4);
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card.total {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .stat-card.approved {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    
+    .stat-card.pending {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    }
+    
+    .stat-card.admin {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .search-container {
+        margin-bottom: 20px;
+    }
+    
+    .search-input {
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        padding: 12px 20px;
+        width: 100%;
+        max-width: 400px;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .filter-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-btn {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 2px solid #667eea;
+        background: transparent;
+        color: #667eea;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .filter-btn:hover,
+    .filter-btn.active {
+        background: #667eea;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">
+        <i class="fas fa-users me-2 text-primary"></i>
+        User Management
+    </h1>
+</div>
+
+<!-- User Statistics -->
+<div class="stats-grid">
+    <div class="stat-card total">
+        <div class="stat-number">{{ users|length }}</div>
+        <div class="stat-label">
+            <i class="fas fa-users me-1"></i>
+            Total Users
+        </div>
+    </div>
+    
+    <div class="stat-card approved">
+        <div class="stat-number">{{ users|selectattr('is_approved')|list|length }}</div>
+        <div class="stat-label">
+            <i class="fas fa-check-circle me-1"></i>
+            Approved Users
+        </div>
+    </div>
+    
+    <div class="stat-card pending">
+        <div class="stat-number">{{ users|rejectattr('is_approved')|list|length }}</div>
+        <div class="stat-label">
+            <i class="fas fa-clock me-1"></i>
+            Pending Users
+        </div>
+    </div>
+    
+    <div class="stat-card admin">
+        <div class="stat-number">{{ users|selectattr('user_level', 'equalto', 'admin')|list|length }}</div>
+        <div class="stat-label">
+            <i class="fas fa-user-shield me-1"></i>
+            Admin Users
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="search-container">
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="search-group">
+            <i class="fas fa-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #666;"></i>
+            <input type="text" 
+                   class="search-input" 
+                   id="userSearch" 
+                   placeholder="Search users by name, username, or email..."
+                   style="padding-left: 45px;">
+        </div>
+        
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">
+                <i class="fas fa-list me-1"></i>
+                All Users
+            </button>
+            <button class="filter-btn" data-filter="approved">
+                <i class="fas fa-check me-1"></i>
+                Approved
+            </button>
+            <button class="filter-btn" data-filter="pending">
+                <i class="fas fa-clock me-1"></i>
+                Pending
+            </button>
+            <button class="filter-btn" data-filter="admin">
+                <i class="fas fa-user-shield me-1"></i>
+                Admin
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Users List -->
+<div class="user-table-container">
+    {% if users %}
+        {% for user in users %}
+        <div class="user-card" data-user-level="{{ user.user_level }}" data-user-status="{{ 'approved' if user.is_approved else 'pending' }}">
+            <div class="user-header">
+                <div class="user-info">
+                    <h6>{{ user.full_name or 'No Name Provided' }}</h6>
+                    <div class="user-username">
+                        <i class="fas fa-at me-1"></i>
+                        @{{ user.username }}
+                        {% if user.email %}
+                            <span class="ms-2">
+                                <i class="fas fa-envelope me-1"></i>
+                                {{ user.email }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="user-meta mt-1">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>
+                            Joined: {{ user.created_at.strftime('%b %d, %Y') }}
+                            {% if user.last_active %}
+                                <span class="ms-3">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Last Active: {{ user.last_active.strftime('%b %d, %Y') if user.last_active else 'Never' }}
+                                </span>
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="text-end">
+                    <div class="user-level-badge user-level-{{ user.user_level }}">
+                        <i class="fas fa-{{ 'user-shield' if user.user_level == 'admin' else 'user' }} me-1"></i>
+                        {{ user.user_level.title() }}
+                    </div>
+                    
+                    <div class="mt-2">
+                        <span class="user-status-badge user-status-{{ 'approved' if user.is_approved else 'pending' }}">
+                            <i class="fas fa-{{ 'check-circle' if user.is_approved else 'clock' }} me-1"></i>
+                            {{ 'Approved' if user.is_approved else 'Pending' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            {% if not user.is_approved %}
+            <div class="user-actions">
+                <form method="POST" action="{{ url_for('approve_user', user_id=user.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-approve btn-sm">
+                        <i class="fas fa-check me-1"></i>
+                        Approve
+                    </button>
+                </form>
+                
+                <form method="POST" action="{{ url_for('reject_user', user_id=user.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-reject btn-sm">
+                        <i class="fas fa-times me-1"></i>
+                        Reject
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div class="user-actions">
+                <form method="POST" action="{{ url_for('reject_user', user_id=user.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-reject btn-sm">
+                        <i class="fas fa-times me-1"></i>
+                        Revoke Access
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h3 class="text-muted">No users found</h3>
+            <p class="text-muted">No users have registered yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('userSearch');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const userCards = document.querySelectorAll('.user-card');
+    
+    let currentFilter = 'all';
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filterUsers(searchTerm, currentFilter);
+    });
+    
+    // Filter functionality
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active button
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Apply filter
+            currentFilter = this.dataset.filter;
+            const searchTerm = searchInput.value.toLowerCase();
+            filterUsers(searchTerm, currentFilter);
+        });
+    });
+    
+    function filterUsers(searchTerm, filter) {
+        userCards.forEach(card => {
+            const userName = card.querySelector('h6').textContent.toLowerCase();
+            const userUsername = card.querySelector('.user-username').textContent.toLowerCase();
+            const userLevel = card.dataset.userLevel;
+            const userStatus = card.dataset.userStatus;
+            
+            // Search filter
+            const matchesSearch = !searchTerm || 
+                userName.includes(searchTerm) || 
+                userUsername.includes(searchTerm);
+            
+            // Status filter
+            const matchesFilter = filter === 'all' ||
+                (filter === 'approved' && userStatus === 'approved') ||
+                (filter === 'pending' && userStatus === 'pending') ||
+                (filter === 'admin' && userLevel === 'admin');
+            
+            if (matchesSearch && matchesFilter) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    // Auto-hide success messages
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert-success');
+        alerts.forEach(alert => {
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 300);
+        });
+    }, 3000);
+});
+</script>
+{% endblock %}
+

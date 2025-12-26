@@ -1,0 +1,66 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Fix for Telegram API timeout issues in bot handlers
+"""
+
+import asyncio
+import logging
+from telegram import Update
+from telegram.ext import ContextTypes
+
+# Configure logging to show timeout issues
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+async def safe_reply_text(update: Update, text: str, **kwargs):
+    """
+    Safely send a reply text with timeout handling and retry logic
+    """
+    try:
+        # Try with longer timeout first
+        await asyncio.wait_for(
+            update.message.reply_text(text, **kwargs),
+            timeout=30.0
+        )
+        logger.info(f"Successfully sent message to user {update.effective_user.id}")
+        
+    except asyncio.TimeoutError:
+        logger.warning(f"Timeout sending message to user {update.effective_user.id}, retrying...")
+        
+        try:
+            # Retry with shorter timeout and simpler message
+            await asyncio.wait_for(
+                update.message.reply_text("Message delivery delayed. Please try again."),
+                timeout=15.0
+            )
+            logger.info(f"Retry successful for user {update.effective_user.id}")
+            
+        except asyncio.TimeoutError:
+            logger.error(f"Failed to send message to user {update.effective_user.id} after retries")
+            # Could also try sending via context.bot.send_message directly
+            
+    except Exception as e:
+        logger.error(f"Error sending message to user {update.effective_user.id}: {e}")
+
+async def safe_callback_query_answer(update: Update, text: str, show_alert: bool = False):
+    """
+    Safely answer callback queries with timeout handling
+    """
+    try:
+        await asyncio.wait_for(
+            update.callback_query.answer(text, show_alert=show_alert),
+            timeout=10.0
+        )
+        
+    except asyncio.TimeoutError:
+        logger.warning(f"Timeout answering callback query for user {update.effective_user.id}")
+        
+    except Exception as e:
+        logger.error(f"Error answering callback query: {e}")
+
+# Example usage in handlers:
+# Replace: await update.message.reply_text("Your message")
+# With: await safe_reply_text(update, "Your message")
+
+# Replace: await update.callback_query.answer("Approved!")
+# With: await safe_callback_query_answer(update, "Approved!")</parameter>

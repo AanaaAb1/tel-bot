@@ -4,12 +4,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Bot Configuration
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8184888715:AAEvw1RcRfltV8A-y2fAHqb6w-CNmskO5to")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/bot.db")
 
 # Telegram API Configuration
-TELEGRAM_API_BASE_URL = os.getenv("TELEGRAM_API_BASE_URL", "API")
-TELEGRAM_API_PATH = os.getenv("TELEGRAM_API_PATH", "/")
+TELEGRAM_API_BASE_URL = os.getenv("TELEGRAM_API_BASE_URL", "https://api.telegram.org")
+TELEGRAM_API_PATH = os.getenv("TELEGRAM_API_PATH", "")
 TELEGRAM_API_URL = TELEGRAM_API_BASE_URL + TELEGRAM_API_PATH
 
 # Process Management Configuration

@@ -1,0 +1,175 @@
+<parameter name="content">from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from app.database.session import SessionLocal
+from app.models.user import User
+from app.services.chapter_service import get_chapters_by_course
+from app.services.question_service import get_questions_by_chapter
+from app.services.course_service import get_course_by_id
+from app.keyboards.main_menu import main_menu
+from app.handlers.radio_question_handler import start_exam_with_polls
+from app.config.constants import ADMIN_IDS
+
+async def handle_chapter_selection(update, context):
+    """Handle chapter selection for a course"""
+    query = update.callback_query
+    await query.answer()
+
+    # Get course ID from callback data
+    course_id = int(query.data.replace("chapters_", ""))
+    
+    # Get course information
+    course = get_course_by_id(course_id)
+    if not course:
+        await query.edit_message_text("Course not found.")
+        return
+
+    # Double-check access status for security
+    user_id = query.from_user.id
+    db = SessionLocal()
+    user = db.query(User).filter_by(telegram_id=user_id).first()
+    db.close()
+
+    if not user or user.access == "LOCKED":
+        await query.edit_message_text(
+            "⚠️ Access Restricted\n\n"
+            "You must complete payment to access exams.\n\n"
+            "Please proceed to payment and wait for admin approval.",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("💳 Go to Payment", callback_data="payment")]])
+        )
+        return
+
+    # Get chapters for this course
+    chapters = get_chapters_by_course(course_id)
+
+    # Build chapter selection message
+    message = f"📚 {course.name}\n\n"
+    if course.description:
+        message += f"{course.description}\n\n"
+    
+    message += "📖 Available Chapters:\n"
+    
+    keyboard_buttons = []
+    
+    if chapters:
+        for i, chapter in enumerate(chapters, 1):
+            message += f"{i}. {chapter.name}\n"
+            if chapter.description:
+                message += f"   {chapter.description}\n"
+            
+            # Add chapter button
+            keyboard_buttons.append([
+                InlineKeyboardButton(f"📝 {chapter.name}", callback_data=f"start_chapter_{chapter.id}")
+            ])
+            
+            # Add practice button for each chapter
+            keyboard_buttons.append([
+                InlineKeyboardButton(f"🎯 Practice {chapter.name}", callback_data=f"practice_chapter_{chapter.id}")
+            ])
+    else:
+        message += "No chapters available yet.\n"
+        message += "Contact an admin to add chapters for this course."
+
+    # Add admin button for adding chapters (if user is admin)
+    if user_id in ADMIN_IDS:
+        keyboard_buttons.append([
+            InlineKeyboardButton("➕ Add Chapter", callback_data=f"admin_add_chapter_{course.id}")
+        ])
+
+    # Add back button
+    keyboard_buttons.append([InlineKeyboardButton("⬅️ Back to Course", callback_data=f"exam_course_{course_id}")])
+    keyboard_buttons.append([InlineKeyboardButton("🏠 Main Menu", callback_data="back_to_main")])
+
+    keyboard = InlineKeyboardMarkup(keyboard_buttons)
+
+    await query.edit_message_text(message, reply_markup=keyboard)
+
+async def handle_chapter_exam(update, context):
+    """Start exam for a specific chapter"""
+    query = update.callback_query
+    await query.answer()
+
+    chapter_id = int(query.data.replace("start_chapter_", ""))
+
+    # Get questions for this chapter
+    questions = get_questions_by_chapter(chapter_id, limit=None)
+
+    if not questions:
+        await query.edit_message_text(
+            "📚 No questions available for this chapter yet.\n\n"
+            "Please check back later or contact an admin to add questions.",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("⬅️ Back to Chapters", callback_data="courses")
+            ]])
+        )
+        return
+
+    # Check if user has access (payment status)
+    db = SessionLocal()
+    user = db.query(User).filter_by(telegram_id=query.from_user.id).first()
+    db.close()
+
+    if not user or user.access == "LOCKED":
+        await query.edit_message_text(
+            "⚠️ Access Restricted\n\n"
+            "You must complete payment to access exams.\n\n"
+            "Please proceed to payment and wait for admin approval.",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("💳 Go to Payment", callback_data="payment")]])
+        )
+        return
+
+    # Initialize exam session for chapter
+    context.user_data["user_id"] = query.from_user.id
+    context.user_data["chat_id"] = query.message.chat_id
+    context.user_data["chapter_id"] = chapter_id
+    context.user_data["questions"] = questions
+    context.user_data["index"] = 0
+    context.user_data["use_timer"] = False
+    context.user_data["exam_type"] = "chapter"
+
+    # Start exam with radio-style questions
+    await start_exam_with_polls(update, context, context.user_data)
+
+async def handle_practice_mode(update, context):
+    """Handle practice mode for a chapter"""
+    query = update.callback_query
+    await query.answer()
+
+    chapter_id = int(query.data.replace("practice_chapter_", ""))
+
+    # Get questions for practice (limited number for practice)
+    questions = get_questions_by_chapter(chapter_id, limit=5)  # Limit to 5 questions for practice
+
+    if not questions:
+        await query.edit_message_text(
+            "📚 No questions available for practice in this chapter yet.\n\n"
+            "Please check back later or contact an admin to add questions.",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("⬅️ Back to Chapters", callback_data="courses")
+            ]])
+        )
+        return
+
+    # Check access
+    db = SessionLocal()
+    user = db.query(User).filter_by(telegram_id=query.from_user.id).first()
+    db.close()
+
+    if not user or user.access == "LOCKED":
+        await query.edit_message_text(
+            "⚠️ Access Restricted\n\n"
+            "You must complete payment to access practice.\n\n"
+            "Please proceed to payment and wait for admin approval.",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("💳 Go to Payment", callback_data="payment")]])
+        )
+        return
+
+    # Initialize practice session
+    context.user_data["user_id"] = query.from_user.id
+    context.user_data["chat_id"] = query.message.chat_id
+    context.user_data["chapter_id"] = chapter_id
+    context.user_data["questions"] = questions
+    context.user_data["index"] = 0
+    context.user_data["use_timer"] = False
+    context.user_data["exam_type"] = "practice"
+
+    # Start practice with immediate feedback
+    await start_exam_with_polls(update, context, context.user_data)</parameter>

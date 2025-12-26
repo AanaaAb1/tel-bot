@@ -52,7 +52,7 @@ def get_detailed_feedback(user_id, exam_id):
         feedback.append({
             "question_text": question.text[:100] + "..." if len(question.text) > 100 else question.text,
             "user_answer": answer.selected_option,
-            "correct_answer": question.correct_option,
+            "correct_answer": question.correct_answer,
             "is_correct": answer.is_correct
         })
 

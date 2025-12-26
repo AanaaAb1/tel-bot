@@ -1,0 +1,289 @@
+
+{% extends "base.html" %}
+
+{% block title %}{% if chapter %}Edit Chapter{% else %}Add Chapter{% endif %} - SmartTest Admin Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .form-header {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .form-header h2 {
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+    
+    .form-header p {
+        color: #666;
+        margin: 0;
+    }
+    
+    .course-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .form-floating {
+        margin-bottom: 20px;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .form-text {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    .btn-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .btn {
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+        min-width: 150px;
+    }
+    
+    .btn-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        color: white;
+    }
+    
+    .form-alert {
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card">
+        <div class="form-header">
+            <h2>
+                <i class="fas fa-list-alt me-2 text-primary"></i>
+                {% if chapter %}Edit Chapter{% else %}Add New Chapter{% endif %}
+            </h2>
+            <p>
+                {% if chapter %}
+                    Update the chapter information below
+                {% else %}
+                    Fill in the details to create a new chapter for {{ course.name }}
+                {% endif %}
+            </p>
+            
+            <div class="course-badge">
+                <i class="fas fa-graduation-cap"></i>
+                {{ course.name }}
+                <small class="ms-2">
+                    <i class="fas fa-tag me-1"></i>
+                    {{ course.code }}
+                </small>
+            </div>
+        </div>
+        
+        <form method="POST" novalidate>
+            <div class="form-floating">
+                <label for="name" class="form-label">
+                    <i class="fas fa-heading me-1"></i>
+                    Chapter Name *
+                </label>
+                <input type="text" 
+                       class="form-control" 
+                       id="name" 
+                       name="name" 
+                       value="{{ chapter.name if chapter else '' }}"
+                       placeholder="e.g., Chapter 1: Introduction to Biology"
+                       required>
+                <div class="form-text">
+                    Enter a descriptive name for this chapter
+                </div>
+            </div>
+            
+            <div class="form-floating">
+                <label for="description" class="form-label">
+                    <i class="fas fa-align-left me-1"></i>
+                    Description
+                </label>
+                <textarea class="form-control" 
+                          id="description" 
+                          name="description" 
+                          rows="4"
+                          placeholder="Brief description of what this chapter covers...">{{ chapter.description if chapter else '' }}</textarea>
+                <div class="form-text">
+                    Optional: Provide a brief description of the chapter content and learning objectives
+                </div>
+            </div>
+            
+            {% if chapter %}
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-calendar me-1"></i>
+                        Created Date
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           value="{{ chapter.created_at.strftime('%B %d, %Y') }}" 
+                           readonly>
+                    <div class="form-text">
+                        When this chapter was first created
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-question-circle me-1"></i>
+                        Total Questions
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           value="{{ chapter.questions_count if chapter.questions_count is defined else '0' }}" 
+                           readonly>
+                    <div class="form-text">
+                        Number of questions in this chapter
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="btn-group">
+                <button type="submit" class="btn btn-gradient">
+                    <i class="fas fa-save me-2"></i>
+                    {% if chapter %}Update Chapter{% else %}Create Chapter{% endif %}
+                </button>
+                
+                <a href="{{ url_for('chapters', course_id=course.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Chapter Guidelines -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                Chapter Creation Guidelines
+            </h5>
+            <ul class="card-text">
+                <li><strong>Chapter Name:</strong> Use clear, descriptive names that indicate the topic area</li>
+                <li><strong>Description:</strong> Provide context about what students will learn in this chapter</li>
+                <li><strong>Content Organization:</strong> Chapters should cover related topics that build upon each other</li>
+                <li><strong>Questions:</strong> You can add questions after creating the chapter</li>
+                <li><strong>Difficulty Levels:</strong> Consider including questions of varying difficulty (Easy, Intermediate, Advanced)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        
+        if (!name) {
+            e.preventDefault();
+            alert('Please fill in the chapter name');
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<span class="loading"></span> Processing...';
+        submitBtn.disabled = true;
+    });
+    
+    // Character counter for description
+    const descriptionTextarea = document.getElementById('description');
+    if (descriptionTextarea) {
+        descriptionTextarea.addEventListener('input', function() {
+            const charCount = this.value.length;
+            const maxChars = 500;
+            
+            // Remove existing counter
+            const existingCounter = this.parentNode.querySelector('.char-counter');
+            if (existingCounter) {
+                existingCounter.remove();
+            }
+            
+            // Add new counter
+            const counter = document.createElement('div');
+            counter.className = 'char-counter form-text';
+            counter.innerHTML = `<span class="${charCount > maxChars ? 'text-danger' : 'text-muted'}">${charCount}/${maxChars} characters</span>`;
+            this.parentNode.appendChild(counter);
+        });
+    }
+});
+</script>
+{% endblock %}
+

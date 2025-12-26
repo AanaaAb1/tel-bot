@@ -67,7 +67,7 @@ async def profile_menu(update, context):
         # Generate invitation link with fallback
         bot_username = context.bot.username
         if not bot_username:
-            bot_username = "your_bot_username"  # Fallback - should be configured
+            bot_username = "SmartTestexambot"  # Fallback - updated bot username
         invitation_link = f"https://t.me/{bot_username}?start=ref_{user.referral_code}"
 
         message_text += f"🔗 **Your Invitation Link:**\n"
@@ -78,10 +78,10 @@ async def profile_menu(update, context):
         message_text += f"• When they register and pay, you get 30 ETB\n"
         message_text += f"• Track your earnings here in your profile\n"
 
-        # Create keyboard for profile actions
+        # Create keyboard for profile actions (fix callback data)
         keyboard = [
             [InlineKeyboardButton("📋 Copy Referral Code", callback_data=f"copy_code_{user.referral_code}")],
-            [InlineKeyboardButton("🔗 Copy Invitation Link", callback_data=f"copy_link_{invitation_link}")],
+            [InlineKeyboardButton("🔗 Copy Invitation Link", callback_data=f"copy_link_{user.referral_code}")],
             [InlineKeyboardButton("📊 View Referral History", callback_data=f"referral_history_{user.id}")],
             [InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_to_main")]
         ]
@@ -328,3 +328,15 @@ async def process_successful_referral_payment(user_id, context):
     except Exception as e:
         print(f"Error in async referral payment processing: {e}")
         return None
+
+def register_profile_handlers(application):
+    """Register profile handlers with the application"""
+    from telegram.ext import CallbackQueryHandler
+    
+    # Add callback query handlers
+    application.add_handler(CallbackQueryHandler(profile_menu, pattern="^profile$"))
+    application.add_handler(CallbackQueryHandler(copy_referral_code, pattern="^copy_code_"))
+    application.add_handler(CallbackQueryHandler(copy_invitation_link, pattern="^copy_link_"))
+    application.add_handler(CallbackQueryHandler(view_referral_history, pattern="^referral_history_"))
+    
+    print("✅ Profile handlers registered successfully")

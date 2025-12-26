@@ -1,0 +1,142 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Debug script to check admin payment listing functionality
+"""
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
+
+from app.database.session import SessionLocal
+from app.models.payment import Payment
+from app.models.user import User
+from app.services.payment_service import get_pending_payments
+from datetime import datetime, timedelta
+
+def check_pending_payments():
+    """Check what pending payments exist in the database"""
+    print("=== CHECKING PENDING PAYMENTS ===")
+    
+    db = SessionLocal()
+    
+    try:
+        # Check all payments in database
+        all_payments = db.query(Payment).all()
+        print(f"Total payments in database: {len(all_payments)}")
+        
+        if all_payments:
+            print("\nAll payments:")
+            for payment in all_payments:
+                user = db.query(User).filter_by(id=payment.user_id).first()
+                user_info = f"{user.name} (ID: {user.telegram_id})" if user else "Unknown user"
+                print(f"  Payment ID: {payment.id}")
+                print(f"  User: {user_info}")
+                print(f"  Status: {payment.status}")
+                print(f"  Amount: {payment.amount}")
+                print(f"  Created: {payment.created_at}")
+                print(f"  Reference: {payment.reference}")
+                print("  ---")
+        
+        # Check pending payments specifically
+        pending_payments = db.query(Payment).filter(Payment.status == "PENDING").all()
+        print(f"\nPending payments: {len(pending_payments)}")
+        
+        if pending_payments:
+            print("\nPending payments details:")
+            for payment in pending_payments:
+                user = db.query(User).filter_by(id=payment.user_id).first()
+                user_info = f"{user.name} (ID: {user.telegram_id})" if user else "Unknown user"
+                print(f"  Payment ID: {payment.id}")
+                print(f"  User: {user_info}")
+                print(f"  Status: {payment.status}")
+                print(f"  Amount: {payment.amount}")
+                print(f"  Created: {payment.created_at}")
+                print("  ---")
+        
+        # Check users with LOCKED access (who might have submitted payments)
+        locked_users = db.query(User).filter(User.access == "LOCKED").all()
+        print(f"\nUsers with LOCKED access: {len(locked_users)}")
+        
+        if locked_users:
+            for user in locked_users:
+                user_payments = db.query(Payment).filter(Payment.user_id == user.id).all()
+                print(f"  User: {user.name} (ID: {user.telegram_id})")
+                print(f"  Access: {user.access}")
+                print(f"  Payments: {len(user_payments)}")
+                for payment in user_payments:
+                    print(f"    Payment ID: {payment.id}, Status: {payment.status}, Amount: {payment.amount}")
+                print("  ---")
+                
+    except Exception as e:
+        print(f"Error checking payments: {e}")
+    finally:
+        db.close()
+
+def create_test_pending_payment():
+    """Create a test pending payment for testing"""
+    print("\n=== CREATING TEST PENDING PAYMENT ===")
+    
+    db = SessionLocal()
+    
+    try:
+        # Get or create a test user
+        test_user = db.query(User).filter(User.telegram_id == 999999).first()
+        if not test_user:
+            test_user = User(
+                telegram_id=999999,
+                name="Test User",
+                email="test@example.com",
+                stream="natural_science",
+                level="freshman",
+                access="LOCKED"
+            )
+            db.add(test_user)
+            db.commit()
+            print(f"Created test user: {test_user.name}")
+        
+        # Create a test pending payment
+        test_payment = Payment(
+            user_id=test_user.id,
+            amount=5000.0,
+            status="PENDING",
+            reference=f"TEST_REF_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
+        db.add(test_payment)
+        db.commit()
+        print(f"Created test pending payment ID: {test_payment.id}")
+        print(f"Amount: {test_payment.amount}")
+        print(f"Reference: {test_payment.reference}")
+        
+    except Exception as e:
+        print(f"Error creating test payment: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+def test_payment_service():
+    """Test the payment service function"""
+    print("\n=== TESTING PAYMENT SERVICE ===")
+    
+    try:
+        pending_payments = get_pending_payments()
+        print(f"Pending payments from service: {len(pending_payments)}")
+        
+        if pending_payments:
+            for payment in pending_payments:
+                print(f"  Payment ID: {payment.id}")
+                print(f"  User ID: {payment.user_id}")
+                print(f"  Amount: {payment.amount}")
+                print(f"  Status: {payment.status}")
+                print(f"  Reference: {payment.reference}")
+                print("  ---")
+    except Exception as e:
+        print(f"Error testing payment service: {e}")
+
+if __name__ == "__main__":
+    check_pending_payments()
+    test_payment_service()
+    
+    print("\n" + "="*50)
+    print("To create a test pending payment, run:")
+    print("python debug_admin_payment_listing.py create_test")
+    print("="*50)</parameter>

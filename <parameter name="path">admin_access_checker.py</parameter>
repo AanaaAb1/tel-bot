@@ -1,0 +1,27 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Admin access checker utility
+"""
+
+from app.config.constants import ADMIN_IDS
+
+def is_admin(user_id):
+    """Check if user is admin"""
+    return user_id in ADMIN_IDS
+
+def has_access(user_id, user_access_level):
+    """Check if user has access - admins always have access"""
+    return is_admin(user_id) or user_access_level == "UNLOCKED"
+
+def get_access_message(user_id, user_access_level):
+    """Get appropriate access message"""
+    if is_admin(user_id):
+        return "✅ Admin access granted - no payment required!"
+    elif user_access_level == "UNLOCKED":
+        return "✅ Access granted!"
+    else:
+        return "❌ Access locked. Please submit payment for approval."
+
+def should_skip_payment_prompt(user_id):
+    """Check if user should skip payment prompts (admins always skip)"""
+    return is_admin(user_id)</parameter>

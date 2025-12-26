@@ -1,0 +1,196 @@
+<parameter name="content">#!/usr/bin/env python3
+"""
+Create admin payment approval handlers to fix the callback routing issue
+"""
+
+from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler, ConversationHandler, filters
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from app.database.session import SessionLocal
+from app.models.user import User
+from app.models.payment import Payment
+from app.services.payment_service import get_pending_payments, approve_payment, reject_payment
+from app.keyboards.admin_keyboard import get_payment_approval_keyboard, get_admin_keyboard
+from app.config.constants import ADMIN_IDS
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def admin_payments(update: Update, context):
+    """Show all pending payments for admin approval"""
+    query = update.callback_query
+    await query.answer()
+    
+    # Check if user is admin
+    user_id = query.from_user.id
+    if user_id not in ADMIN_IDS:
+        await query.edit_message_text("❌ Access Denied: Admin privileges required.")
+        return
+    
+    # Get pending payments
+    try:
+        pending_payments = get_pending_payments()
+        
+        if not pending_payments:
+            # No pending payments - show message with refresh button
+            keyboard = [
+                [InlineKeyboardButton("🔄 Refresh", callback_data="admin_payments")],
+                [InlineKeyboardButton("↩️ Back to Admin Panel", callback_data="admin_panel")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await query.edit_message_text(
+                "📋 **Admin Payments**\n\n"
+                "No pending payment requests found.\n\n"
+                "This means no users have submitted payment requests that need approval.",
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Build payment list message
+        message = "📋 **Pending Payments for Approval**\n\n"
+        
+        for i, payment in enumerate(pending_payments, 1):
+            # Get user info
+            db = SessionLocal()
+            user = db.query(User).filter_by(id=payment.user_id).first()
+            db.close()
+            
+            user_info = f"{user.name} (ID: {user.telegram_id})" if user else f"User ID: {payment.user_id}"
+            
+            message += f"**Payment #{payment.id}**\n"
+            message += f"👤 User: {user_info}\n"
+            message += f"💰 Amount: ${payment.amount:.2f}\n"
+            message += f"📅 Date: {payment.created_at.strftime('%Y-%m-%d %H:%M')}\n"
+            message += f"📝 Reference: {payment.reference}\n\n"
+        
+        # Add approve/reject buttons for each payment
+        keyboard = []
+        for payment in pending_payments:
+            keyboard.append([
+                InlineKeyboardButton(f"✅ Approve #{payment.id}", callback_data=f"approve_payment_{payment.id}"),
+                InlineKeyboardButton(f"❌ Reject #{payment.id}", callback_data=f"reject_payment_{payment.id}")
+            ])
+        
+        # Add back button
+        keyboard.append([InlineKeyboardButton("↩️ Back to Admin Panel", callback_data="admin_panel")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+        
+    except Exception as e:
+        logger.error(f"Error in admin_payments: {e}")
+        await query.edit_message_text(f"❌ Error loading payments: {str(e)}")
+
+async def admin_approve_payment(update: Update, context):
+    """Approve a payment request"""
+    query = update.callback_query
+    await query.answer()
+    
+    # Check if user is admin
+    user_id = query.from_user.id
+    if user_id not in ADMIN_IDS:
+        await query.edit_message_text("❌ Access Denied: Admin privileges required.")
+        return
+    
+    try:
+        # Extract payment ID from callback data
+        payment_id = int(query.data.replace("approve_payment_", ""))
+        
+        # Approve the payment
+        success = approve_payment(payment_id)
+        
+        if success:
+            # Get payment details for confirmation
+            db = SessionLocal()
+            payment = db.query(Payment).filter_by(id=payment_id).first()
+            user = db.query(User).filter_by(id=payment.user_id).first() if payment else None
+            db.close()
+            
+            if payment and user:
+                await query.edit_message_text(
+                    f"✅ **Payment Approved Successfully**\n\n"
+                    f"💰 Payment ID: {payment.id}\n"
+                    f"👤 User: {user.name} (ID: {user.telegram_id})\n"
+                    f"💵 Amount: ${payment.amount:.2f}\n\n"
+                    f"🎉 User now has access to premium features!",
+                    parse_mode='Markdown'
+                )
+            else:
+                await query.edit_message_text("✅ Payment approved successfully!")
+        else:
+            await query.edit_message_text("❌ Failed to approve payment. Please try again.")
+            
+    except ValueError:
+        await query.edit_message_text("❌ Invalid payment ID.")
+    except Exception as e:
+        logger.error(f"Error approving payment: {e}")
+        await query.edit_message_text(f"❌ Error approving payment: {str(e)}")
+
+async def admin_reject_payment(update: Update, context):
+    """Reject a payment request"""
+    query = update.callback_query
+    await query.answer()
+    
+    # Check if user is admin
+    user_id = query.from_user.id
+    if user_id not in ADMIN_IDS:
+        await query.edit_message_text("❌ Access Denied: Admin privileges required.")
+        return
+    
+    try:
+        # Extract payment ID from callback data
+        payment_id = int(query.data.replace("reject_payment_", ""))
+        
+        # Reject the payment
+        success = reject_payment(payment_id)
+        
+        if success:
+            # Get payment details for confirmation
+            db = SessionLocal()
+            payment = db.query(Payment).filter_by(id=payment_id).first()
+            user = db.query(User).filter_by(id=payment.user_id).first() if payment else None
+            db.close()
+            
+            if payment and user:
+                await query.edit_message_text(
+                    f"❌ **Payment Rejected**\n\n"
+                    f"💰 Payment ID: {payment.id}\n"
+                    f"👤 User: {user.name} (ID: {user.telegram_id})\n"
+                    f"💵 Amount: ${payment.amount:.2f}\n\n"
+                    f"User remains with restricted access.",
+                    parse_mode='Markdown'
+                )
+            else:
+                await query.edit_message_text("❌ Payment rejected successfully!")
+        else:
+            await query.edit_message_text("❌ Failed to reject payment. Please try again.")
+            
+    except ValueError:
+        await query.edit_message_text("❌ Invalid payment ID.")
+    except Exception as e:
+        logger.error(f"Error rejecting payment: {e}")
+        await query.edit_message_text(f"❌ Error rejecting payment: {str(e)}")
+
+def register_admin_payment_handlers(application):
+    """Register admin payment approval handlers"""
+    
+    # Admin payments handler
+    application.add_handler(CallbackQueryHandler(
+        admin_payments, 
+        pattern="^admin_payments$"
+    ))
+    
+    # Payment approval handlers
+    application.add_handler(CallbackQueryHandler(
+        admin_approve_payment, 
+        pattern="^approve_payment_"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        admin_reject_payment, 
+        pattern="^reject_payment_"
+    ))
+    
+    logger.info("Admin payment approval handlers registered successfully")</parameter>
