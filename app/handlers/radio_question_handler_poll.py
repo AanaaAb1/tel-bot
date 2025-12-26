@@ -188,10 +188,10 @@ async def handle_poll_answer(update, context):
         else:
             await show_practice_completion(update, context, data)
     else:
-        logger.info(f"➡️ User {user_id} moving to question {data['index'] + 1}/{len(data['questions'])} - calling show_next_question")
+        logger.info(f"➡️ User {user_id} moving to question {data['index'] + 1}/{len(data['questions'])} - calling show_question_as_poll")
         # Show next question immediately
         try:
-            await show_next_question(update, context, data)
+            await show_question_as_poll(update, context, data)
             logger.info(f"✅ Next question sent successfully")
         except Exception as e:
             logger.error(f"❌ Failed to show next question: {e}")
@@ -228,14 +228,15 @@ async def show_question_as_poll(update, context, data):
     # Store chat_id in data for future use
     data["chat_id"] = chat_id
 
-    # Send poll question - anonymous poll for single user
+    # Send poll question - quiz poll for exam
     poll_message = await context.bot.send_poll(
         chat_id=chat_id,
         question=poll_data["question"],
         options=poll_data["options"],
-        type=PollType.REGULAR,  # Regular poll
+        type=PollType.QUIZ,  # Quiz poll
         is_anonymous=False,  # Non-anonymous to receive poll answers
         allows_multiple_answers=False,  # Radio button behavior
+        correct_option_id=question_data["correct_option_id"],  # Correct answer for quiz
         open_period=None  # No time limit for poll
     )
 
@@ -419,9 +420,10 @@ async def show_next_question(update, context, data):
         chat_id=chat_id,
         question=poll_data["question"],
         options=poll_data["options"],
-        type=PollType.REGULAR,  # Regular poll
+        type=PollType.QUIZ,  # Quiz poll
         is_anonymous=False,  # Non-anonymous to receive poll answers
         allows_multiple_answers=False,  # Radio button behavior
+        correct_option_id=question_data["correct_option_id"],  # Correct answer for quiz
         open_period=None  # No time limit for poll
     )
 
